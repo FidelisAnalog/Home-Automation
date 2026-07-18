@@ -47,8 +47,9 @@ void FakeGPS::dump_config() {
                 this->invert_ ? "inverted (idle low)" : "TTL (idle high)");
   ESP_LOGCONFIG(TAG, "  Sentences: %s%s%s%s", this->en_zda_ ? "ZDA " : "", this->en_rmc_ ? "RMC " : "",
                 this->en_gga_ ? "GGA " : "", this->en_gsa_ ? "GSA" : "");
-  ESP_LOGCONFIG(TAG, "  Time basis: %s, offset %+" PRId32 " ms, valid gate %s",
-                this->time_basis_ == BASIS_LOCAL ? "local" : "utc", this->time_offset_ms_, YESNO(this->valid_gate_));
+  ESP_LOGCONFIG(TAG, "  Time basis: %s, offset %+" PRId32 " ms, valid gate %s, every %" PRIu32 " s",
+                this->time_basis_ == BASIS_LOCAL ? "local" : "utc", this->time_offset_ms_, YESNO(this->valid_gate_),
+                this->interval_s_);
   ESP_LOGCONFIG(TAG, "  Motion: off delay %" PRIu32 " ms, strobe %" PRIu32 " ms every %" PRIu32 " ms",
                 this->off_delay_ms_, this->strobe_pulse_ms_, this->restrobe_period_ms_);
 }
@@ -62,6 +63,11 @@ void FakeGPS::set_invert(bool v) {
 void FakeGPS::set_time_offset_ms(int32_t v) {
   this->time_offset_ms_ = v;
   this->next_emit_us_ = 0;  // reschedule with the new offset
+}
+
+void FakeGPS::set_sentence_interval_s(uint32_t v) {
+  this->interval_s_ = std::max<uint32_t>(1, v);
+  this->next_emit_us_ = 0;  // reschedule with the new interval
 }
 
 void FakeGPS::set_motion_mode(MotionMode m) {
@@ -145,8 +151,8 @@ void FakeGPS::loop() {
 
   this->emit_burst_((time_t) this->stamp_second_);
 
-  this->stamp_second_ += 1;
-  this->next_emit_us_ += 1000000LL;
+  this->stamp_second_ += this->interval_s_;
+  this->next_emit_us_ += (int64_t) this->interval_s_ * 1000000LL;
   if (this->hf_active_) {
     this->hf_.stop();
     this->hf_active_ = false;

@@ -119,6 +119,21 @@ number:
     on_value:
       - lambda: 'id(fgps).set_time_offset_ms((int32_t) x);'
   - platform: template
+    name: "Sentence Interval"
+    id: fgps_num_interval
+    icon: mdi:timer-sync-outline
+    unit_of_measurement: "s"
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 5
+    min_value: 1
+    max_value: 60
+    step: 1
+    on_value:
+      - lambda: 'id(fgps).set_sentence_interval_s((uint32_t) x);'
+  - platform: template
     name: "Display Off Delay"
     id: fgps_num_offdelay
     icon: mdi:timer-off-outline

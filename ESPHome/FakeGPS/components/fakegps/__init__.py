@@ -3,6 +3,7 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import time as time_
 from esphome.const import CONF_ID, CONF_TIME_ID
+from esphome.core import TimePeriod
 
 CODEOWNERS = ["@FidelisAnalog"]
 DEPENDENCIES = ["time"]
@@ -49,6 +50,7 @@ CONF_ALTITUDE_M = "altitude_m"
 CONF_HDOP = "hdop"
 CONF_TIME_BASIS = "time_basis"
 CONF_TIME_OFFSET_MS = "time_offset_ms"
+CONF_SENTENCE_INTERVAL = "sentence_interval"
 CONF_TIME_VALID_GATE = "time_valid_gate"
 CONF_OFF_DELAY = "off_delay"
 CONF_STROBE_PULSE = "strobe_pulse"
@@ -79,6 +81,10 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_HDOP, default=0.9): cv.positive_float,
         cv.Optional(CONF_TIME_BASIS, default="local"): cv.enum(TIME_BASES, lower=True),
         cv.Optional(CONF_TIME_OFFSET_MS, default=0): cv.int_range(min=-1000, max=1000),
+        cv.Optional(CONF_SENTENCE_INTERVAL, default="5s"): cv.All(
+            cv.positive_time_period_seconds,
+            cv.Range(min=TimePeriod(seconds=1), max=TimePeriod(seconds=3600)),
+        ),
         cv.Optional(CONF_TIME_VALID_GATE, default=True): cv.boolean,
         cv.Optional(CONF_OFF_DELAY, default="5min"): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_STROBE_PULSE, default="200ms"): cv.positive_time_period_milliseconds,
@@ -121,6 +127,7 @@ async def to_code(config):
     cg.add(var.set_hdop(config[CONF_HDOP]))
     cg.add(var.set_time_basis(config[CONF_TIME_BASIS]))
     cg.add(var.set_time_offset_ms(config[CONF_TIME_OFFSET_MS]))
+    cg.add(var.set_sentence_interval_s(config[CONF_SENTENCE_INTERVAL]))
     cg.add(var.set_time_valid_gate(config[CONF_TIME_VALID_GATE]))
     cg.add(var.set_off_delay_ms(config[CONF_OFF_DELAY]))
     cg.add(var.set_strobe_pulse_ms(config[CONF_STROBE_PULSE]))

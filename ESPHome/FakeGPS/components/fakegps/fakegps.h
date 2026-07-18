@@ -35,6 +35,7 @@ class FakeGPS : public Component {
   void set_baud(uint32_t v) { this->baud_ = v; }
   void set_invert(bool v);
   void set_time_offset_ms(int32_t v);
+  void set_sentence_interval_s(uint32_t v);
   void set_en_gpzda(bool v) { this->en_zda_ = v; }
   void set_en_gprmc(bool v) { this->en_rmc_ = v; }
   void set_en_gpgga(bool v) { this->en_gga_ = v; }
@@ -62,6 +63,7 @@ class FakeGPS : public Component {
   uint32_t active_baud() const { return this->baud_; }
   bool inverted() const { return this->invert_; }
   int32_t time_offset_ms() const { return this->time_offset_ms_; }
+  uint32_t sentence_interval_s() const { return this->interval_s_; }
   MotionMode motion_mode() const { return this->mode_; }
 
   void setup() override;
@@ -104,6 +106,7 @@ class FakeGPS : public Component {
   // emission scheduling
   bool stream_enabled_{true};
   int32_t time_offset_ms_{0};
+  uint32_t interval_s_{5};
   int64_t next_emit_us_{0};
   int64_t stamp_second_{0};
   bool synced_{false};

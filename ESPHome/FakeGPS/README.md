@@ -41,7 +41,55 @@ build.
 
 Runtime tuning from HA (no reflash): stream + per-sentence enables, baud,
 polarity, `time_offset_ms` (cancels the clock's display lag — see spec FR4),
-motion mode, off-delay, strobe timing, fake position/satellites.
+sentence interval, motion mode, off-delay, strobe timing, fake
+position/satellites.
+
+Note: the spec (FR2) says one burst per second; the working default is now a
+burst every **5 s** (`sentence_interval`, 1–3600 s in YAML, 1–60 s from the HA
+number). Each burst is still aligned to a top-of-second minus the time offset
+and stamped with that second.
+
+## Home Assistant entities
+
+Everything the device exposes, including entities from the device YAML (not
+just the package). Some of these are of debatable value — documented as-is,
+prune/rename as the project settles.
+
+### Controls
+
+| Entity | Type | Category | What it does |
+|--------|------|----------|--------------|
+| GPS Stream | switch | — | Master enable for NMEA output |
+| Sentence GPZDA / GPRMC / GPGGA / GPGSA | switch ×4 | config | Enable each sentence type individually |
+| GPS Baud | select | config | 4800–115200; takes effect next burst |
+| GPS Polarity | select | config | TTL (idle high) vs Inverted (idle low) |
+| Motion Mode | select | — | Auto / Force On / Force Off |
+| Time Offset | number (ms, −1000…1000) | — | Emission phase shift; positive = display earlier |
+| Sentence Interval | number (s, 1–60) | config | Seconds between NMEA bursts |
+| Display Off Delay | number (min, 0.1–1440) | — | ESP-owned display timeout after last motion |
+| Strobe Pulse | number (ms, 20–2000) | config | Width of each motion pulse to the clock |
+| Restrobe Period | number (s, 1–3600) | config | Keep-alive pulse spacing; must be < clock's min motion interval |
+| Fake Latitude / Longitude | number ×2 | config | Position reported in RMC/GGA |
+| Fake Satellites | number (4–12) | config | Sat count in GGA/GSA |
+| Tickle Motion | button | — | Inject a motion event (for HA automations from any sensor) |
+| Restart | button | diagnostic | Reboot the ESP |
+
+### Status
+
+| Entity | Type | Category | What it shows |
+|--------|------|----------|---------------|
+| Time Synced | binary | diagnostic | System clock has real time (gates A/V validity) |
+| PIR Motion | binary | — | Raw state of the physical PIR input |
+| Display Should Be On | binary | — | Result of mode + countdown (what the ESP wants) |
+| Motion Line Driven | binary | diagnostic | Strobe pulse currently active on the output pin |
+| Seconds Since Motion | sensor (s) | — | Time since last PIR/tickle event (unknown until first) |
+| Motion Countdown | sensor (s) | — | Remaining off-delay time (0 outside Auto) |
+| NMEA Sentences Sent | sensor | diagnostic | Total sentences transmitted since boot |
+| Uptime | sensor | diagnostic | Since boot |
+| FakeGPS WiFi RSSI | sensor (dBm) | — | From device YAML; also drawn on the OLED |
+| Last NMEA Sentence | text | diagnostic | Most recent sentence transmitted (checksum visible) |
+| Last Motion Source | text | diagnostic | `PIR` / `tickle` / `none` |
+| IP Address / SSID / BSSID / MAC Address | text ×4 | diagnostic | WiFi link details |
 
 ### Calibrating the time offset
 
