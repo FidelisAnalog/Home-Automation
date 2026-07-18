@@ -1,0 +1,296 @@
+# =====================================================================
+#  FakeGPS — Home Assistant control surface (packaged)
+#
+#  Pulled into the device config as a remote package. Assumes the device
+#  config defines:   fakegps:  id: fgps   (and a time source, wifi, api).
+#  All controls call straight into the fakegps component; changes take
+#  effect on the next second's burst — no reboot needed.
+# =====================================================================
+
+switch:
+  - platform: template
+    name: "GPS Stream"
+    id: fgps_sw_stream
+    icon: mdi:satellite-uplink
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: 'id(fgps).set_stream_enabled(true);'
+    turn_off_action:
+      - lambda: 'id(fgps).set_stream_enabled(false);'
+  - platform: template
+    name: "Sentence GPZDA"
+    id: fgps_sw_zda
+    icon: mdi:code-brackets
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: 'id(fgps).set_en_gpzda(true);'
+    turn_off_action:
+      - lambda: 'id(fgps).set_en_gpzda(false);'
+  - platform: template
+    name: "Sentence GPRMC"
+    id: fgps_sw_rmc
+    icon: mdi:code-brackets
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: 'id(fgps).set_en_gprmc(true);'
+    turn_off_action:
+      - lambda: 'id(fgps).set_en_gprmc(false);'
+  - platform: template
+    name: "Sentence GPGGA"
+    id: fgps_sw_gga
+    icon: mdi:code-brackets
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: 'id(fgps).set_en_gpgga(true);'
+    turn_off_action:
+      - lambda: 'id(fgps).set_en_gpgga(false);'
+  - platform: template
+    name: "Sentence GPGSA"
+    id: fgps_sw_gsa
+    icon: mdi:code-brackets
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: 'id(fgps).set_en_gpgsa(true);'
+    turn_off_action:
+      - lambda: 'id(fgps).set_en_gpgsa(false);'
+
+select:
+  - platform: template
+    name: "GPS Baud"
+    id: fgps_sel_baud
+    icon: mdi:speedometer
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "9600"
+    options: ["4800", "9600", "19200", "38400", "57600", "115200"]
+    on_value:
+      - lambda: 'id(fgps).set_baud((uint32_t) atoi(x.c_str()));'
+  - platform: template
+    name: "GPS Polarity"
+    id: fgps_sel_polarity
+    icon: mdi:swap-vertical
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "TTL (idle high)"
+    options: ["TTL (idle high)", "Inverted (idle low)"]
+    on_value:
+      - lambda: 'id(fgps).set_invert(x == "Inverted (idle low)");'
+  - platform: template
+    name: "Motion Mode"
+    id: fgps_sel_mode
+    icon: mdi:motion-sensor
+    optimistic: true
+    restore_value: true
+    initial_option: "Auto"
+    options: ["Auto", "Force On", "Force Off"]
+    on_value:
+      - lambda: |-
+          if (x == "Force On")
+            id(fgps).set_motion_mode(fakegps::MODE_ON);
+          else if (x == "Force Off")
+            id(fgps).set_motion_mode(fakegps::MODE_OFF);
+          else
+            id(fgps).set_motion_mode(fakegps::MODE_AUTO);
+
+number:
+  - platform: template
+    name: "Time Offset"
+    id: fgps_num_offset
+    icon: mdi:timer-sand
+    unit_of_measurement: "ms"
+    mode: box
+    optimistic: true
+    restore_value: true
+    initial_value: 0
+    min_value: -1000
+    max_value: 1000
+    step: 1
+    on_value:
+      - lambda: 'id(fgps).set_time_offset_ms((int32_t) x);'
+  - platform: template
+    name: "Display Off Delay"
+    id: fgps_num_offdelay
+    icon: mdi:timer-off-outline
+    unit_of_measurement: "min"
+    mode: box
+    optimistic: true
+    restore_value: true
+    initial_value: 5
+    min_value: 0.1
+    max_value: 1440
+    step: 0.1
+    on_value:
+      - lambda: 'id(fgps).set_off_delay_ms((uint32_t) (x * 60000.0f));'
+  - platform: template
+    name: "Strobe Pulse"
+    id: fgps_num_strobe
+    icon: mdi:pulse
+    unit_of_measurement: "ms"
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 200
+    min_value: 20
+    max_value: 2000
+    step: 10
+    on_value:
+      - lambda: 'id(fgps).set_strobe_pulse_ms((uint32_t) x);'
+  - platform: template
+    name: "Restrobe Period"
+    id: fgps_num_restrobe
+    icon: mdi:refresh
+    unit_of_measurement: "s"
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 20
+    min_value: 1
+    max_value: 3600
+    step: 1
+    on_value:
+      - lambda: 'id(fgps).set_restrobe_period_ms((uint32_t) (x * 1000.0f));'
+  - platform: template
+    name: "Fake Latitude"
+    id: fgps_num_lat
+    icon: mdi:latitude
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 40.2333
+    min_value: -90
+    max_value: 90
+    step: 0.0001
+    on_value:
+      - lambda: 'id(fgps).set_latitude((double) x);'
+  - platform: template
+    name: "Fake Longitude"
+    id: fgps_num_lon
+    icon: mdi:longitude
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: -82.85
+    min_value: -180
+    max_value: 180
+    step: 0.0001
+    on_value:
+      - lambda: 'id(fgps).set_longitude((double) x);'
+  - platform: template
+    name: "Fake Satellites"
+    id: fgps_num_sats
+    icon: mdi:satellite-variant
+    mode: box
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 10
+    min_value: 4
+    max_value: 12
+    step: 1
+    on_value:
+      - lambda: 'id(fgps).set_sats((uint8_t) x);'
+
+button:
+  - platform: template
+    name: "Tickle Motion"
+    id: fgps_btn_tickle
+    icon: mdi:hand-wave
+    on_press:
+      - lambda: 'id(fgps).tickle();'
+  - platform: restart
+    name: "Restart"
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: template
+    name: "Time Synced"
+    id: fgps_bs_synced
+    icon: mdi:clock-check
+    entity_category: diagnostic
+    lambda: 'return id(fgps).is_synced();'
+  - platform: template
+    name: "PIR Motion"
+    id: fgps_bs_pir
+    device_class: motion
+    lambda: 'return id(fgps).pir_state();'
+  - platform: template
+    name: "Display Should Be On"
+    id: fgps_bs_display
+    icon: mdi:television-ambient-light
+    lambda: 'return id(fgps).display_on();'
+  - platform: template
+    name: "Motion Line Driven"
+    id: fgps_bs_line
+    icon: mdi:electric-switch
+    entity_category: diagnostic
+    lambda: 'return id(fgps).motion_line_active();'
+
+sensor:
+  - platform: template
+    name: "Seconds Since Motion"
+    id: fgps_sn_since
+    icon: mdi:motion-sensor
+    unit_of_measurement: "s"
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: 'return id(fgps).seconds_since_motion();'
+  - platform: template
+    name: "Motion Countdown"
+    id: fgps_sn_countdown
+    icon: mdi:timer-outline
+    unit_of_measurement: "s"
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: 'return id(fgps).countdown_remaining_s();'
+  - platform: template
+    name: "NMEA Sentences Sent"
+    id: fgps_sn_txcount
+    icon: mdi:counter
+    accuracy_decimals: 0
+    state_class: total_increasing
+    entity_category: diagnostic
+    update_interval: 10s
+    lambda: 'return (float) id(fgps).tx_count();'
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: template
+    name: "Last NMEA Sentence"
+    id: fgps_ts_last
+    icon: mdi:message-text
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: 'return id(fgps).last_sentence();'
+  - platform: template
+    name: "Last Motion Source"
+    id: fgps_ts_source
+    icon: mdi:source-branch
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: 'return id(fgps).last_motion_source();'
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+    ssid:
+      name: "SSID"
+    bssid:
+      name: "BSSID"
+    mac_address:
+      name: "MAC Address"
