@@ -5,6 +5,9 @@
 #  config defines:   fakegps:  id: fgps   (and a time source, wifi, api).
 #  All controls call straight into the fakegps component; changes take
 #  effect on the next second's burst — no reboot needed.
+#
+#  web_server blocks place each entity in a functional group on the
+#  device's web page (groups defined in fakegps-device.yaml).
 # =====================================================================
 
 switch:
@@ -15,6 +18,9 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 2
     turn_on_action:
       - lambda: 'id(fgps).set_en_gpzda(true);'
     turn_off_action:
@@ -26,6 +32,9 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 3
     turn_on_action:
       - lambda: 'id(fgps).set_en_gprmc(true);'
     turn_off_action:
@@ -37,6 +46,9 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 4
     turn_on_action:
       - lambda: 'id(fgps).set_en_gpgga(true);'
     turn_off_action:
@@ -48,6 +60,9 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 5
     turn_on_action:
       - lambda: 'id(fgps).set_en_gpgsa(true);'
     turn_off_action:
@@ -63,6 +78,9 @@ select:
     restore_value: true
     initial_option: "9600"
     options: ["4800", "9600", "19200", "38400", "57600", "115200"]
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 6
     on_value:
       - lambda: 'id(fgps).set_baud((uint32_t) atoi(x.c_str()));'
   - platform: template
@@ -74,6 +92,9 @@ select:
     restore_value: true
     initial_option: "TTL"
     options: ["TTL", "Pseudo-RS232"]
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 7
     on_value:
       - lambda: 'id(fgps).set_invert(x == "Pseudo-RS232");'
   # Pin assignment — safe GPIOs only (2/8/9 are strapping/BOOT, 4-7 are
@@ -87,6 +108,9 @@ select:
     restore_value: true
     initial_option: "GPIO0"
     options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 8
     on_value:
       - lambda: 'id(fgps).set_tx_gpio((int8_t) atoi(x.c_str() + 4));'
   - platform: template
@@ -98,6 +122,9 @@ select:
     restore_value: true
     initial_option: "GPIO1"
     options: ["None", "GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 2
     on_value:
       - lambda: |-
           if (x == "None")
@@ -113,6 +140,9 @@ select:
     restore_value: true
     initial_option: "GPIO10"
     options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 3
     on_value:
       - lambda: 'id(fgps).set_motion_gpio((int8_t) atoi(x.c_str() + 4));'
   - platform: template
@@ -123,6 +153,9 @@ select:
     restore_value: true
     initial_option: "Motion"
     options: ["Force On", "Force Off", "Motion"]
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 1
     on_value:
       - lambda: |-
           if (x == "Force On")
@@ -145,6 +178,9 @@ number:
     min_value: -1000
     max_value: 1000
     step: 1
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 10
     on_value:
       - lambda: 'id(fgps).set_time_offset_ms((int32_t) x);'
   - platform: template
@@ -160,6 +196,9 @@ number:
     min_value: 1
     max_value: 60
     step: 1
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 9
     on_value:
       - lambda: 'id(fgps).set_sentence_interval_s((uint32_t) x);'
   - platform: template
@@ -174,6 +213,9 @@ number:
     min_value: 0.1
     max_value: 1440
     step: 0.1
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 4
     on_value:
       - lambda: 'id(fgps).set_off_delay_ms((uint32_t) (x * 60000.0f));'
   - platform: template
@@ -189,6 +231,9 @@ number:
     min_value: 1
     max_value: 15
     step: 1
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 5
     on_value:
       - lambda: 'id(fgps).set_restrobe_period_ms((uint32_t) (x * 1000.0f));'
   - platform: template
@@ -203,6 +248,9 @@ number:
     min_value: -90
     max_value: 90
     step: 0.0001
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 11
     on_value:
       - lambda: 'id(fgps).set_latitude((double) x);'
   - platform: template
@@ -217,6 +265,9 @@ number:
     min_value: -180
     max_value: 180
     step: 0.0001
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 12
     on_value:
       - lambda: 'id(fgps).set_longitude((double) x);'
   - platform: template
@@ -231,6 +282,9 @@ number:
     min_value: 4
     max_value: 12
     step: 1
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 13
     on_value:
       - lambda: 'id(fgps).set_sats((uint8_t) x);'
 
@@ -239,11 +293,17 @@ button:
     name: "Tickle Motion"
     id: fgps_btn_tickle
     icon: mdi:hand-wave
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 6
     on_press:
       - lambda: 'id(fgps).tickle();'
   - platform: restart
     name: "Restart"
     entity_category: diagnostic
+    web_server:
+      sorting_group_id: sg_hardware
+      sorting_weight: 3
 
 binary_sensor:
   - platform: template
@@ -251,6 +311,9 @@ binary_sensor:
     id: fgps_bs_synced
     icon: mdi:clock-check
     entity_category: diagnostic
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 1
     lambda: 'return id(fgps).is_synced();'
   # Raw PIR state and the strobe pulses are device-log only: the PIR is an
   # internal input (not an HA motion sensor), and the strobe line toggles
@@ -259,6 +322,9 @@ binary_sensor:
     name: "Display Should Be On"
     id: fgps_bs_display
     icon: mdi:television-ambient-light
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 7
     lambda: 'return id(fgps).display_on();'
 
 sensor:
@@ -269,6 +335,9 @@ sensor:
     unit_of_measurement: "s"
     accuracy_decimals: 0
     update_interval: 5s
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 8
     lambda: 'return id(fgps).seconds_since_motion();'
   - platform: template
     name: "Motion Countdown"
@@ -277,6 +346,9 @@ sensor:
     unit_of_measurement: "s"
     accuracy_decimals: 0
     update_interval: 5s
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 9
     lambda: 'return id(fgps).countdown_remaining_s();'
   - platform: template
     name: "NMEA Sentences Sent"
@@ -286,10 +358,16 @@ sensor:
     state_class: total_increasing
     entity_category: diagnostic
     update_interval: 10s
+    web_server:
+      sorting_group_id: sg_gps
+      sorting_weight: 14
     lambda: 'return (float) id(fgps).tx_count();'
   - platform: uptime
     name: "Uptime"
     entity_category: diagnostic
+    web_server:
+      sorting_group_id: sg_hardware
+      sorting_weight: 2
 
 # Needed for the reset-reason text sensor below
 debug:
@@ -302,19 +380,37 @@ text_sensor:
     reset_reason:
       name: "Last Reboot Reason"
       entity_category: diagnostic
+      web_server:
+        sorting_group_id: sg_hardware
+        sorting_weight: 1
   - platform: template
     name: "Last Motion Source"
     id: fgps_ts_source
     icon: mdi:source-branch
     entity_category: diagnostic
     update_interval: 5s
+    web_server:
+      sorting_group_id: sg_motion
+      sorting_weight: 10
     lambda: 'return id(fgps).last_motion_source();'
   - platform: wifi_info
     ip_address:
       name: "IP Address"
+      web_server:
+        sorting_group_id: sg_connectivity
+        sorting_weight: 3
     ssid:
       name: "SSID"
+      web_server:
+        sorting_group_id: sg_connectivity
+        sorting_weight: 1
     bssid:
       name: "BSSID"
+      web_server:
+        sorting_group_id: sg_connectivity
+        sorting_weight: 2
     mac_address:
       name: "MAC Address"
+      web_server:
+        sorting_group_id: sg_connectivity
+        sorting_weight: 4
