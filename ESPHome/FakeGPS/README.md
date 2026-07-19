@@ -14,10 +14,8 @@ Full requirements: [fakegps_esphome_spec.md](fakegps_esphome_spec.md).
 | File | What it is |
 |------|------------|
 | `components/fakegps/` | The external component (NMEA generator, bit-bang TX, emission scheduler, motion logic) |
-| `fakegps-device.yaml` | Remote package: everything project-side — component source, fakegps config/pins, time source, OLED, fonts, web server |
+| `fakegps-device.yaml` | Remote package: everything project-side — component source, fakegps config, time source, OLED, fonts, web server |
 | `fakegps-entities.yaml` | Remote package: all the HA switches/selects/numbers/sensors |
-| `spectrum18-masterbed.yaml` | Reference device config: identity + secrets + network + the packages block (live copy is in the HAOS builder) |
-| `nixie-fakegps-phase1.yaml` | Historical: phase-1 (OLED + time) paste-in blocks |
 
 ## Wiring (ESP32-C3 0.42" OLED board)
 
@@ -71,9 +69,9 @@ wiring differences need no YAML changes.
 
 The device YAML in the builder is minimal: identity, secrets, network, and a
 `packages:` block pulling `fakegps-device.yaml` + `fakegps-entities.yaml` from
-this repo (see `spectrum18-masterbed.yaml`). After a push to `main`, hit
-Update/Install in the ESPHome builder — `refresh: 0s` makes it re-fetch every
-build.
+this repo (the block shown in Fresh install above). After a push to `main`,
+hit Update/Install in the ESPHome builder — `refresh: 0s` makes it re-fetch
+every build.
 
 Runtime tuning from HA (no reflash): per-sentence enables, baud, output type,
 `time_offset_ms` (cancels the clock's display lag — see spec FR4), sentence
