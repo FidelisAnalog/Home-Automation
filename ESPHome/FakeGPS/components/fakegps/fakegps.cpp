@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <driver/gpio.h>
 #include <esp_timer.h>
 #include <sys/time.h>
 
@@ -24,25 +25,80 @@ static const int64_t HF_WINDOW_US = 60000;
 static const int64_t SPIN_WINDOW_US = 2000;
 
 void FakeGPS::setup() {
-  if (this->tx_pin_ != nullptr) {
-    this->tx_pin_->setup();
-    this->tx_pin_->digital_write(!this->invert_);  // idle level
+  this->config_tx_pin_();
+  this->config_motion_pin_();
+  this->config_pir_pin_();
+}
+
+void FakeGPS::config_tx_pin_() {
+  if (this->tx_gpio_ < 0)
+    return;
+  gpio_num_t pin = (gpio_num_t) this->tx_gpio_;
+  gpio_reset_pin(pin);
+  gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+  gpio_set_level(pin, !this->invert_);  // idle level
+}
+
+void FakeGPS::config_motion_pin_() {
+  if (this->motion_gpio_ < 0)
+    return;
+  gpio_num_t pin = (gpio_num_t) this->motion_gpio_;
+  gpio_reset_pin(pin);
+  gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+  gpio_set_level(pin, 0);
+}
+
+void FakeGPS::config_pir_pin_() {
+  if (this->pir_gpio_ < 0)
+    return;
+  gpio_num_t pin = (gpio_num_t) this->pir_gpio_;
+  gpio_reset_pin(pin);
+  gpio_set_direction(pin, GPIO_MODE_INPUT);
+  gpio_pullup_dis(pin);
+  gpio_pulldown_en(pin);  // defined low when no PIR is wired
+  this->pir_last_ = gpio_get_level(pin);
+}
+
+void FakeGPS::set_tx_gpio(int8_t pin) {
+  if (pin == this->tx_gpio_)
+    return;
+  if (this->tx_gpio_ >= 0)
+    gpio_reset_pin((gpio_num_t) this->tx_gpio_);
+  this->tx_gpio_ = pin;
+  this->config_tx_pin_();
+  ESP_LOGI(TAG, "TX pin -> GPIO%d", pin);
+}
+
+void FakeGPS::set_pir_gpio(int8_t pin) {
+  if (pin == this->pir_gpio_)
+    return;
+  if (this->pir_gpio_ >= 0)
+    gpio_reset_pin((gpio_num_t) this->pir_gpio_);
+  this->pir_gpio_ = pin;
+  this->pir_last_ = false;
+  this->config_pir_pin_();
+  if (pin < 0) {
+    ESP_LOGI(TAG, "PIR input -> none");
+  } else {
+    ESP_LOGI(TAG, "PIR input -> GPIO%d", pin);
   }
-  if (this->motion_pin_ != nullptr) {
-    this->motion_pin_->setup();
-    this->motion_pin_->digital_write(false);
-  }
-  if (this->pir_pin_ != nullptr) {
-    this->pir_pin_->setup();
-    this->pir_last_ = this->pir_pin_->digital_read();
-  }
+}
+
+void FakeGPS::set_motion_gpio(int8_t pin) {
+  if (pin == this->motion_gpio_)
+    return;
+  if (this->motion_gpio_ >= 0)
+    gpio_reset_pin((gpio_num_t) this->motion_gpio_);
+  this->motion_gpio_ = pin;
+  this->strobe_active_ = false;
+  this->config_motion_pin_();
+  ESP_LOGI(TAG, "Motion output -> GPIO%d", pin);
 }
 
 void FakeGPS::dump_config() {
   ESP_LOGCONFIG(TAG, "FakeGPS:");
-  LOG_PIN("  TX pin: ", this->tx_pin_);
-  LOG_PIN("  PIR in pin: ", this->pir_pin_);
-  LOG_PIN("  Motion out pin: ", this->motion_pin_);
+  ESP_LOGCONFIG(TAG, "  TX: GPIO%d, PIR in: GPIO%d, Motion out: GPIO%d", this->tx_gpio_, this->pir_gpio_,
+                this->motion_gpio_);
   ESP_LOGCONFIG(TAG, "  Serial: %" PRIu32 " baud, %uN%u, %s", this->baud_, this->data_bits_, this->stop_bits_,
                 this->invert_ ? "inverted (idle low)" : "TTL (idle high)");
   ESP_LOGCONFIG(TAG, "  Sentences: %s%s%s%s", this->en_zda_ ? "ZDA " : "", this->en_rmc_ ? "RMC " : "",
@@ -56,8 +112,8 @@ void FakeGPS::dump_config() {
 
 void FakeGPS::set_invert(bool v) {
   this->invert_ = v;
-  if (this->tx_pin_ != nullptr)
-    this->tx_pin_->digital_write(!v);  // re-assert idle level with new polarity
+  if (this->tx_gpio_ >= 0)
+    gpio_set_level((gpio_num_t) this->tx_gpio_, !v);  // re-assert idle level with new polarity
 }
 
 void FakeGPS::set_time_offset_ms(int32_t v) {
@@ -109,7 +165,7 @@ void FakeGPS::loop() {
   int64_t now_us = (int64_t) tv.tv_sec * 1000000LL + tv.tv_usec;
   this->synced_ = tv.tv_sec > SYNC_EPOCH_FLOOR;
 
-  if (!this->stream_enabled_ || this->tx_pin_ == nullptr) {
+  if (!this->stream_enabled_ || this->tx_gpio_ < 0) {
     if (this->hf_active_) {
       this->hf_.stop();
       this->hf_active_ = false;
@@ -165,6 +221,9 @@ void FakeGPS::emit_burst_(time_t stamp) {
   for (auto &s : sentences) {
     this->tx_string_(s);
     App.feed_wdt();  // bursts are ~10s of ms; keep the watchdog happy
+    // Device log only (web page / builder log) — deliberately NOT an HA
+    // entity: state churn every burst floods the HA logbook.
+    ESP_LOGD(TAG, "TX %s", s.substr(0, s.size() - 2).c_str());
   }
   if (!sentences.empty()) {
     this->tx_count_ += sentences.size();
@@ -236,6 +295,8 @@ void FakeGPS::deg_to_dm_(double deg, bool is_lat, char *buf, size_t len, char &h
 }
 
 void FakeGPS::tx_string_(const std::string &s) {
+  if (this->tx_gpio_ < 0)
+    return;
   const int64_t bit_ns = 1000000000LL / (int64_t) this->baud_;
   int64_t deadline_ns = (int64_t) esp_timer_get_time() * 1000LL;
   for (unsigned char c : s) {
@@ -261,7 +322,7 @@ void FakeGPS::tx_string_(const std::string &s) {
 
 inline void FakeGPS::tx_bit_(bool logical, int64_t &deadline_ns, int64_t bit_ns) {
   // logical true = mark = idle. Non-inverted TTL: mark is high.
-  this->tx_pin_->digital_write(this->invert_ ? !logical : logical);
+  gpio_set_level((gpio_num_t) this->tx_gpio_, this->invert_ ? !logical : logical);
   deadline_ns += bit_ns;
   while ((int64_t) esp_timer_get_time() * 1000LL < deadline_ns) {
   }
@@ -270,8 +331,8 @@ inline void FakeGPS::tx_bit_(bool logical, int64_t &deadline_ns, int64_t bit_ns)
 void FakeGPS::motion_loop_() {
   const uint32_t now = millis();
 
-  if (this->pir_pin_ != nullptr) {
-    bool pir = this->pir_pin_->digital_read();
+  if (this->pir_gpio_ >= 0) {
+    bool pir = gpio_get_level((gpio_num_t) this->pir_gpio_);
     if (pir && !this->pir_last_ && this->mode_ != MODE_OFF)
       this->motion_event_("PIR");
     this->pir_last_ = pir;
@@ -291,7 +352,7 @@ void FakeGPS::motion_loop_() {
   }
   this->display_on_ = want_on;
 
-  if (this->motion_pin_ == nullptr)
+  if (this->motion_gpio_ < 0)
     return;
 
   if (want_on && !this->strobe_active_ &&
@@ -300,12 +361,12 @@ void FakeGPS::motion_loop_() {
     this->force_strobe_ = false;
     this->strobe_start_ms_ = now;
     this->last_strobe_ms_ = now;
-    this->motion_pin_->digital_write(true);
+    gpio_set_level((gpio_num_t) this->motion_gpio_, 1);
   }
 
   if (this->strobe_active_ && (now - this->strobe_start_ms_) >= this->strobe_pulse_ms_) {
     this->strobe_active_ = false;
-    this->motion_pin_->digital_write(false);
+    gpio_set_level((gpio_num_t) this->motion_gpio_, 0);
   }
 }
 

@@ -19,9 +19,6 @@ class FakeGPS : public Component {
  public:
   // --- wiring / build-time config (from codegen) ---
   void set_time_source(time::RealTimeClock *rtc) { this->rtc_ = rtc; }
-  void set_tx_pin(GPIOPin *pin) { this->tx_pin_ = pin; }
-  void set_pir_pin(GPIOPin *pin) { this->pir_pin_ = pin; }
-  void set_motion_pin(GPIOPin *pin) { this->motion_pin_ = pin; }
   void set_data_bits(uint8_t v) { this->data_bits_ = v; }
   void set_stop_bits(uint8_t v) { this->stop_bits_ = v; }
   void set_parity(Parity v) { this->parity_ = v; }
@@ -31,6 +28,10 @@ class FakeGPS : public Component {
   void set_hdop(float v) { this->hdop_ = v; }
 
   // --- runtime-adjustable (config sets defaults; HA entities call these live) ---
+  // Pins are runtime-remappable via the GPIO matrix; -1 = unused.
+  void set_tx_gpio(int8_t pin);
+  void set_pir_gpio(int8_t pin);
+  void set_motion_gpio(int8_t pin);
   void set_stream_enabled(bool v) { this->stream_enabled_ = v; }
   void set_baud(uint32_t v) { this->baud_ = v; }
   void set_invert(bool v);
@@ -78,14 +79,17 @@ class FakeGPS : public Component {
   inline void tx_bit_(bool logical, int64_t &deadline_ns, int64_t bit_ns);
   void motion_loop_();
   void motion_event_(const char *source);
+  void config_tx_pin_();
+  void config_pir_pin_();
+  void config_motion_pin_();
   static std::string wrap_checksum_(const std::string &body);
   static void deg_to_dm_(double deg, bool is_lat, char *buf, size_t len, char &hemi);
 
   // wiring
   time::RealTimeClock *rtc_{nullptr};
-  GPIOPin *tx_pin_{nullptr};
-  GPIOPin *pir_pin_{nullptr};
-  GPIOPin *motion_pin_{nullptr};
+  int8_t tx_gpio_{0};
+  int8_t pir_gpio_{1};
+  int8_t motion_gpio_{10};
 
   // serial parameters
   uint32_t baud_{9600};

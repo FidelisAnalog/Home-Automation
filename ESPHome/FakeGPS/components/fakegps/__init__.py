@@ -1,6 +1,5 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome import pins
 from esphome.components import time as time_
 from esphome.const import CONF_ID, CONF_TIME_ID
 from esphome.core import TimePeriod
@@ -31,9 +30,6 @@ MOTION_MODES = {
     "off": MotionMode.MODE_OFF,
 }
 
-CONF_TX_PIN = "tx_pin"
-CONF_PIR_IN_PIN = "pir_in_pin"
-CONF_MOTION_OUT_PIN = "motion_out_pin"
 CONF_BAUD = "baud"
 CONF_INVERT = "invert"
 CONF_DATA_BITS = "data_bits"
@@ -60,9 +56,6 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(FakeGPS),
         cv.GenerateID(CONF_TIME_ID): cv.use_id(time_.RealTimeClock),
-        cv.Required(CONF_TX_PIN): pins.gpio_output_pin_schema,
-        cv.Optional(CONF_PIR_IN_PIN): pins.gpio_input_pin_schema,
-        cv.Optional(CONF_MOTION_OUT_PIN): pins.gpio_output_pin_schema,
         cv.Optional(CONF_BAUD, default=9600): cv.int_range(min=300, max=115200),
         cv.Optional(CONF_INVERT, default=False): cv.boolean,
         cv.Optional(CONF_DATA_BITS, default=8): cv.one_of(7, 8, int=True),
@@ -100,15 +93,6 @@ async def to_code(config):
 
     rtc = await cg.get_variable(config[CONF_TIME_ID])
     cg.add(var.set_time_source(rtc))
-
-    tx = await cg.gpio_pin_expression(config[CONF_TX_PIN])
-    cg.add(var.set_tx_pin(tx))
-    if CONF_PIR_IN_PIN in config:
-        pir = await cg.gpio_pin_expression(config[CONF_PIR_IN_PIN])
-        cg.add(var.set_pir_pin(pir))
-    if CONF_MOTION_OUT_PIN in config:
-        mot = await cg.gpio_pin_expression(config[CONF_MOTION_OUT_PIN])
-        cg.add(var.set_motion_pin(mot))
 
     cg.add(var.set_baud(config[CONF_BAUD]))
     cg.add(var.set_invert(config[CONF_INVERT]))

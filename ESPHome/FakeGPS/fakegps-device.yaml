@@ -6,8 +6,22 @@
 #  file and fakegps-entities.yaml.
 #
 #  Board: ESP32-C3 0.42" OLED | OLED I2C = GPIO5/6
-#  Wiring: GPIO0 -> clock GPS RX, GPIO1 <- PIR out, GPIO10 -> clock motion in
+#  Signal pins (GPS TX / PIR in / motion out) are HA config dropdowns,
+#  defaults GPIO0 / GPIO1 / GPIO10 — no YAML edit to rewire.
+#
+#  Board variance: the substitutions below are defaults; override any of
+#  them from the builder config with a substitutions: block there, e.g.
+#      substitutions:
+#        oled_sda: GPIO7
+#        oled_nudge_y: "6"
 # =====================================================================
+
+substitutions:
+  oled_sda: GPIO5
+  oled_scl: GPIO6
+  oled_model: "SH1106 128x64"
+  oled_nudge_x: "0"
+  oled_nudge_y: "8"
 
 external_components:
   - source:
@@ -21,13 +35,6 @@ external_components:
 fakegps:
   id: fgps
   time_id: ha_time
-  tx_pin: GPIO0          # -> clock GPS serial RX (3.3V TTL)
-  pir_in_pin:
-    number: GPIO1        # <- PIR output; harmless if no PIR wired yet
-    mode:
-      input: true
-      pulldown: true
-  motion_out_pin: GPIO10 # -> clock motion input
   baud: 9600
   invert: false
   time_offset_ms: 0
@@ -42,8 +49,8 @@ time:
 
 # I2C bus for the onboard OLED
 i2c:
-  sda: GPIO5
-  scl: GPIO6
+  sda: $oled_sda
+  scl: $oled_scl
   frequency: 800kHz
 
 # WiFi signal — shown on the OLED and exposed to HA
@@ -72,7 +79,7 @@ web_server:
 # window offset is 28,24 — unvalidated).
 display:
   - platform: ssd1306_i2c
-    model: "SH1106 128x64"
+    model: "$oled_model"
     address: 0x3C
     id: oled
     update_interval: 1s
@@ -80,8 +87,8 @@ display:
       - id: page_home
         lambda: |-
           const int cx = it.get_width() / 2;   // ~64, inside the visible window
-          const int nudge_x = 0;               // tweak if text is off to a side
-          const int nudge_y = 8;               // tweak if text is too high/low
+          const int nudge_x = $oled_nudge_x;   // tweak if text is off to a side
+          const int nudge_y = $oled_nudge_y;   // tweak if text is too high/low
           auto t = id(ha_time).now();
           if (t.is_valid()) {
             it.strftime(cx + nudge_x, 13 + nudge_y, id(font_big),

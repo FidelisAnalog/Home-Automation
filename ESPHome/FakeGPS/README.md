@@ -21,16 +21,22 @@ Full requirements: [fakegps_esphome_spec.md](fakegps_esphome_spec.md).
 
 ## Wiring (ESP32-C3 0.42" OLED board)
 
-| Signal | Pin | Notes |
-|--------|-----|-------|
+| Signal | Default pin | Notes |
+|--------|-------------|-------|
 | NMEA TX | GPIO0 | → clock GPS RX (3.3 V TTL) |
-| PIR in | GPIO1 | ← HC-SR501 out (~3.3 V); optional |
+| PIR in | GPIO1 | ← HC-SR501 out (~3.3 V); optional (set to None) |
 | Motion strobe | GPIO10 | → clock motion input |
-| OLED I²C | GPIO5/6 | onboard, fixed |
+| OLED I²C | GPIO5/6 | substitution defaults `oled_sda`/`oled_scl` |
 | Power | 5 V | USB-C or 5V pin; PIR shares the 5 V rail |
 
-Active levels: set `inverted: true` on `pir_in_pin` / `motion_out_pin` in the
-device YAML if the PIR or clock uses active-low.
+The three signal pins are **HA config dropdowns** (immediate effect, survive
+reboot) — rewiring never requires a YAML edit. The dropdowns offer only the
+safe GPIOs (0/1/3/10); 2/8/9 are strapping/BOOT, 4–7 are JTAG/I²C, 20/21 are
+the UART console. The OLED pins are build-time (I²C driver), overridable via
+`substitutions:` in the builder config. A board with no OLED fitted logs one
+display-init failure at boot and runs normally otherwise.
+
+All signals are fixed active-high (HC-SR501-style PIR, rising-edge strobe).
 
 ## Usage
 
@@ -63,6 +69,9 @@ prune/rename as the project settles.
 | Sentence GPZDA / GPRMC / GPGGA / GPGSA | switch ×4 | config | Enable each sentence type individually |
 | GPS Baud | select | config | 4800–115200; takes effect next burst |
 | Output Type | select | config | TTL or Pseudo-RS232 (inverted TTL) |
+| GPS TX Pin | select | config | GPIO0 (default) /1/3/10 — live remap |
+| PIR Input Pin | select | config | None or GPIO0/1 (default)/3/10 — live remap |
+| Motion Output Pin | select | config | GPIO0/1/3/10 (default 10) — live remap |
 | Motion Output | select | — | Force On / Force Off / Motion (follows PIR + tickles) |
 | Time Offset | number (ms, −1000…1000) | — | Emission phase shift; positive = display earlier |
 | Sentence Interval | number (s, 1–60) | config | Seconds between NMEA bursts |
@@ -85,10 +94,13 @@ prune/rename as the project settles.
 | Motion Countdown | sensor (s) | — | Remaining off-delay time (0 outside Auto) |
 | NMEA Sentences Sent | sensor | diagnostic | Total sentences transmitted since boot |
 | Uptime | sensor | diagnostic | Since boot |
-| FakeGPS WiFi RSSI | sensor (dBm) | — | From device YAML; also drawn on the OLED |
-| Last NMEA Sentence | text | diagnostic | Most recent sentence transmitted (checksum visible) |
+| FakeGPS WiFi RSSI | sensor (dBm) | — | From device package; also drawn on the OLED |
 | Last Motion Source | text | diagnostic | `PIR` / `tickle` / `none` |
 | IP Address / SSID / BSSID / MAC Address | text ×4 | diagnostic | WiFi link details |
+
+Transmitted NMEA sentences deliberately have **no HA entity** — per-burst
+state churn floods the HA logbook. They're printed to the device log instead:
+open the device's web page (its IP) or the builder's log viewer.
 
 ### Calibrating the time offset
 

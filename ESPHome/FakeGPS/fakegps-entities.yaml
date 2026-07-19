@@ -76,6 +76,45 @@ select:
     options: ["TTL", "Pseudo-RS232"]
     on_value:
       - lambda: 'id(fgps).set_invert(x == "Pseudo-RS232");'
+  # Pin assignment — safe GPIOs only (2/8/9 are strapping/BOOT, 4-7 are
+  # JTAG/OLED I2C, 20/21 are the UART console). Takes effect immediately.
+  - platform: template
+    name: "GPS TX Pin"
+    id: fgps_sel_tx_pin
+    icon: mdi:transit-connection-variant
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "GPIO0"
+    options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    on_value:
+      - lambda: 'id(fgps).set_tx_gpio((int8_t) atoi(x.c_str() + 4));'
+  - platform: template
+    name: "PIR Input Pin"
+    id: fgps_sel_pir_pin
+    icon: mdi:transit-connection-variant
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "GPIO1"
+    options: ["None", "GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    on_value:
+      - lambda: |-
+          if (x == "None")
+            id(fgps).set_pir_gpio(-1);
+          else
+            id(fgps).set_pir_gpio((int8_t) atoi(x.c_str() + 4));
+  - platform: template
+    name: "Motion Output Pin"
+    id: fgps_sel_motion_pin
+    icon: mdi:transit-connection-variant
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_option: "GPIO10"
+    options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    on_value:
+      - lambda: 'id(fgps).set_motion_gpio((int8_t) atoi(x.c_str() + 4));'
   - platform: template
     name: "Motion Output"
     id: fgps_sel_mode
@@ -260,14 +299,10 @@ sensor:
     name: "Uptime"
     entity_category: diagnostic
 
+# NMEA sentences deliberately have no HA entity — state churn every burst
+# floods the HA logbook. They're printed to the device log instead (web page
+# at the device IP, or the builder's log viewer).
 text_sensor:
-  - platform: template
-    name: "Last NMEA Sentence"
-    id: fgps_ts_last
-    icon: mdi:message-text
-    entity_category: diagnostic
-    update_interval: 5s
-    lambda: 'return id(fgps).last_sentence();'
   - platform: template
     name: "Last Motion Source"
     id: fgps_ts_source
