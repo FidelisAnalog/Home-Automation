@@ -140,6 +140,8 @@ class FakeGPS : public Component {
   bool strobe_active_{false};
   bool force_strobe_{false};
   uint32_t strobe_count_{0};
+  bool line_held_{false};
+  uint32_t hold_log_ms_{0};
   uint32_t strobe_start_ms_{0};
   uint32_t last_strobe_ms_{0};
 };

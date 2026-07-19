@@ -398,6 +398,40 @@ void FakeGPS::motion_loop_() {
   if (this->motion_gpio_ < 0)
     return;
 
+  // Restrobe period <= pulse width means the pulses would be back-to-back:
+  // hold the line high instead of hammering pulses (and the log).
+  if (this->restrobe_period_ms_ <= this->strobe_pulse_ms_) {
+    if (want_on) {
+      if (!this->line_held_) {
+        this->line_held_ = true;
+        this->strobe_active_ = true;
+        this->strobe_count_++;
+        this->hold_log_ms_ = now;
+        gpio_set_level((gpio_num_t) this->motion_gpio_, 1);
+        ESP_LOGD(TAG, "Motion line held high");
+      } else if (now - this->hold_log_ms_ >= 60000) {
+        this->hold_log_ms_ = now;
+        ESP_LOGD(TAG, "Motion line still held high");
+      }
+      this->last_strobe_ms_ = now;  // keeps the OLED OUT indicator lit
+      this->force_strobe_ = false;
+    } else if (this->line_held_) {
+      this->line_held_ = false;
+      this->strobe_active_ = false;
+      gpio_set_level((gpio_num_t) this->motion_gpio_, 0);
+      ESP_LOGD(TAG, "Motion line released");
+    }
+    return;
+  }
+
+  // Back in pulse mode (e.g. restrobe period raised at runtime): drop a held line
+  if (this->line_held_) {
+    this->line_held_ = false;
+    this->strobe_active_ = false;
+    gpio_set_level((gpio_num_t) this->motion_gpio_, 0);
+    ESP_LOGD(TAG, "Motion line released");
+  }
+
   if (want_on && !this->strobe_active_ &&
       (this->force_strobe_ || (now - this->last_strobe_ms_) >= this->restrobe_period_ms_)) {
     const bool forced = this->force_strobe_;
