@@ -65,6 +65,63 @@ All signals are fixed active-high (HC-SR501-style PIR, rising-edge strobe).
 Then wire per the table above. Signal pins are HA dropdowns after boot, so
 wiring differences need no YAML changes.
 
+## Standalone (no Home Assistant)
+
+The component doesn't care where time comes from — swap Home Assistant time
+for NTP and the device is fully self-sufficient. In your device config
+(after the fresh-install steps):
+
+1. **Time from NTP instead of HA** — the package's HA time source is replaced
+   with SNTP under the same id. The timezone must be stated explicitly (HA
+   normally supplies it); DST rules are baked in at build, so changeovers
+   still handle themselves:
+
+   ```yaml
+   time:
+     - id: !remove ha_time
+     - platform: sntp
+       id: ha_time
+       timezone: America/New_York   # your IANA timezone
+   ```
+
+2. **Stop the no-HA reboot** — ESPHome reboots after 15 min without an HA
+   connection unless told otherwise:
+
+   ```yaml
+   api:
+     reboot_timeout: 0s
+   ```
+
+   (Or delete the `api:` block entirely if HA will never be involved.)
+
+Control and calibration happen on the device's own web page (its IP, port
+80) — every switch, select, and number from the entity table is there, and
+set values persist across reboots. The network must offer NTP (internet
+access or a local NTP server). What you lose without HA: external-sensor
+tickles via automations (use the HTTP API below instead) and long-term
+history.
+
+## HTTP API (no HA required)
+
+The on-device web server is also a REST API — anything that can make an
+HTTP request can drive the device. Entity URLs use the entity name,
+lowercased with underscores:
+
+```sh
+# Inject a motion event (what an HA automation would do)
+curl -X POST http://<device-ip>/button/tickle_motion/press
+
+# Force the display on / off / back to motion control
+curl -X POST "http://<device-ip>/select/motion_output/set?option=Force%20On"
+curl -X POST "http://<device-ip>/select/motion_output/set?option=Motion"
+
+# Tune numbers, e.g. display off-delay to 10 min
+curl -X POST "http://<device-ip>/number/display_off_delay/set?value=10"
+
+# Read state (JSON)
+curl http://<device-ip>/binary_sensor/time_synced
+```
+
 ## Usage
 
 The device YAML in the builder is minimal: identity, secrets, network, and a
