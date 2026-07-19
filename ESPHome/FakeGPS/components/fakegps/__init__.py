@@ -47,7 +47,6 @@ CONF_HDOP = "hdop"
 CONF_TIME_BASIS = "time_basis"
 CONF_TIME_OFFSET_MS = "time_offset_ms"
 CONF_SENTENCE_INTERVAL = "sentence_interval"
-CONF_TIME_VALID_GATE = "time_valid_gate"
 CONF_OFF_DELAY = "off_delay"
 CONF_RESTROBE_PERIOD = "restrobe_period"
 CONF_MOTION_MODE = "motion_mode"
@@ -76,7 +75,6 @@ CONFIG_SCHEMA = cv.Schema(
             cv.positive_time_period_seconds,
             cv.Range(min=TimePeriod(seconds=1), max=TimePeriod(seconds=3600)),
         ),
-        cv.Optional(CONF_TIME_VALID_GATE, default=True): cv.boolean,
         cv.Optional(CONF_OFF_DELAY, default="5min"): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_RESTROBE_PERIOD, default="5s"): cv.All(
             cv.positive_time_period_milliseconds,
@@ -111,7 +109,6 @@ async def to_code(config):
     cg.add(var.set_time_basis(config[CONF_TIME_BASIS]))
     cg.add(var.set_time_offset_ms(config[CONF_TIME_OFFSET_MS]))
     cg.add(var.set_sentence_interval_s(config[CONF_SENTENCE_INTERVAL]))
-    cg.add(var.set_time_valid_gate(config[CONF_TIME_VALID_GATE]))
     cg.add(var.set_off_delay_ms(config[CONF_OFF_DELAY]))
     cg.add(var.set_restrobe_period_ms(config[CONF_RESTROBE_PERIOD]))
     cg.add(var.set_motion_mode(config[CONF_MOTION_MODE]))

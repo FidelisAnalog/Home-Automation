@@ -23,7 +23,6 @@ class FakeGPS : public Component {
   void set_stop_bits(uint8_t v) { this->stop_bits_ = v; }
   void set_parity(Parity v) { this->parity_ = v; }
   void set_time_basis(TimeBasis v) { this->time_basis_ = v; }
-  void set_time_valid_gate(bool v) { this->valid_gate_ = v; }
   void set_altitude(float v) { this->altitude_m_ = v; }
   void set_hdop(float v) { this->hdop_ = v; }
 
@@ -105,7 +104,6 @@ class FakeGPS : public Component {
   float altitude_m_{100.0f};
   float hdop_{0.9f};
   TimeBasis time_basis_{BASIS_LOCAL};
-  bool valid_gate_{true};
 
   // emission scheduling
   bool stream_enabled_{true};

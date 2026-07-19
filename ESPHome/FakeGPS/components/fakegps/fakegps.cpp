@@ -103,9 +103,8 @@ void FakeGPS::dump_config() {
                 this->invert_ ? "inverted (idle low)" : "TTL (idle high)");
   ESP_LOGCONFIG(TAG, "  Sentences: %s%s%s%s", this->en_zda_ ? "ZDA " : "", this->en_rmc_ ? "RMC " : "",
                 this->en_gga_ ? "GGA " : "", this->en_gsa_ ? "GSA" : "");
-  ESP_LOGCONFIG(TAG, "  Time basis: %s, offset %+" PRId32 " ms, valid gate %s, every %" PRIu32 " s",
-                this->time_basis_ == BASIS_LOCAL ? "local" : "utc", this->time_offset_ms_, YESNO(this->valid_gate_),
-                this->interval_s_);
+  ESP_LOGCONFIG(TAG, "  Time basis: %s, offset %+" PRId32 " ms, every %" PRIu32 " s (silent until synced)",
+                this->time_basis_ == BASIS_LOCAL ? "local" : "utc", this->time_offset_ms_, this->interval_s_);
   ESP_LOGCONFIG(TAG, "  Motion: off delay %" PRIu32 " ms, strobe %" PRIu32 " ms every %" PRIu32 " ms",
                 this->off_delay_ms_, this->strobe_pulse_ms_, this->restrobe_period_ms_);
 }
@@ -165,17 +164,15 @@ void FakeGPS::loop() {
   int64_t now_us = (int64_t) tv.tv_sec * 1000000LL + tv.tv_usec;
   this->synced_ = tv.tv_sec > SYNC_EPOCH_FLOOR;
 
-  // Hold the line completely silent until real time exists: GPZDA has no
-  // valid/void flag, so emitting before sync hands the clock boot-time
-  // garbage it may latch. (time_valid_gate: false restores the old
-  // emit-void-sentences behavior for clocks that honor the RMC/GGA flags.)
-  const bool gate_closed = this->valid_gate_ && !this->synced_;
-
+  // The line stays completely silent until real time exists. Pre-sync output
+  // would stamp boot-time garbage (1970); clocks that latch it typically
+  // then reject the correct time as an implausible jump for a long lockout
+  // period. There is deliberately no option to emit earlier.
   if (this->synced_ && !this->was_synced_)
     ESP_LOGI(TAG, "Time synced; NMEA stream starting");
   this->was_synced_ = this->synced_;
 
-  if (!this->stream_enabled_ || this->tx_gpio_ < 0 || gate_closed) {
+  if (!this->stream_enabled_ || this->tx_gpio_ < 0 || !this->synced_) {
     if (this->hf_active_) {
       this->hf_.stop();
       this->hf_active_ = false;
@@ -243,8 +240,8 @@ void FakeGPS::emit_burst_(time_t stamp) {
 }
 
 void FakeGPS::build_sentences_(time_t stamp, std::vector<std::string> &out) {
+  // Only ever called post-sync, so fields are unconditionally valid/fixed.
   ESPTime t = (this->time_basis_ == BASIS_LOCAL) ? ESPTime::from_epoch_local(stamp) : ESPTime::from_epoch_utc(stamp);
-  const bool fix = this->synced_ || !this->valid_gate_;
 
   char hhmmss[16];
   snprintf(hhmmss, sizeof(hhmmss), "%02u%02u%02u.00", t.hour, t.minute, t.second);
@@ -261,13 +258,13 @@ void FakeGPS::build_sentences_(time_t stamp, std::vector<std::string> &out) {
     out.push_back(wrap_checksum_(body));
   }
   if (this->en_rmc_) {
-    snprintf(body, sizeof(body), "GPRMC,%s,%c,%s,%c,%s,%c,000.0,000.0,%02u%02u%02u,,,%c", hhmmss, fix ? 'A' : 'V', lat,
-             lat_h, lon, lon_h, t.day_of_month, t.month, (unsigned) (t.year % 100), fix ? 'A' : 'N');
+    snprintf(body, sizeof(body), "GPRMC,%s,A,%s,%c,%s,%c,000.0,000.0,%02u%02u%02u,,,A", hhmmss, lat, lat_h, lon,
+             lon_h, t.day_of_month, t.month, (unsigned) (t.year % 100));
     out.push_back(wrap_checksum_(body));
   }
   if (this->en_gga_) {
-    snprintf(body, sizeof(body), "GPGGA,%s,%s,%c,%s,%c,%d,%02u,%.1f,%.1f,M,-34.0,M,,", hhmmss, lat, lat_h, lon, lon_h,
-             fix ? 1 : 0, this->sats_, (double) this->hdop_, (double) this->altitude_m_);
+    snprintf(body, sizeof(body), "GPGGA,%s,%s,%c,%s,%c,1,%02u,%.1f,%.1f,M,-34.0,M,,", hhmmss, lat, lat_h, lon, lon_h,
+             this->sats_, (double) this->hdop_, (double) this->altitude_m_);
     out.push_back(wrap_checksum_(body));
   }
   if (this->en_gsa_) {
@@ -279,7 +276,7 @@ void FakeGPS::build_sentences_(time_t stamp, std::vector<std::string> &out) {
       else
         pos += snprintf(satlist + pos, sizeof(satlist) - pos, "%s", i < 11 ? "," : "");
     }
-    snprintf(body, sizeof(body), "GPGSA,A,%d,%s,%.1f,%.1f,%.1f", fix ? 3 : 1, satlist, (double) (this->hdop_ * 2.0f),
+    snprintf(body, sizeof(body), "GPGSA,A,3,%s,%.1f,%.1f,%.1f", satlist, (double) (this->hdop_ * 2.0f),
              (double) this->hdop_, (double) (this->hdop_ * 1.667f));
     out.push_back(wrap_checksum_(body));
   }

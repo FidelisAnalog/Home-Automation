@@ -86,7 +86,7 @@ prune/rename as the project settles.
 
 | Entity | Type | Category | What it shows |
 |--------|------|----------|---------------|
-| Time Synced | binary | diagnostic | System clock has real time (gates A/V validity) |
+| Time Synced | binary | diagnostic | System clock has real time; the TX line is completely silent until then |
 | Display Should Be On | binary | — | Result of mode + countdown (what the ESP wants) |
 | Seconds Since Motion | sensor (s) | — | Time since last PIR/tickle event (unknown until first) |
 | Motion Countdown | sensor (s) | — | Remaining off-delay time (0 outside Auto) |
