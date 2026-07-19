@@ -111,5 +111,5 @@ instead: open the device's web page (its IP) or the builder's log viewer.
 
 - **Phase 1 (done):** board online, OLED time + RSSI, web dashboard.
 - **Phase 2 (this):** full component — NMEA + bit-bang TX + motion + HA controls.
-- **Later:** OLED status glyphs/detail pages (spec FR8), rolling event log
-  text sensor, Lovelace dashboard YAML.
+- **Later:** OLED polish (spec FR8): status glyphs, WAIT SYNC state, burn-in
+  dimming, and BOOT-button page cycling (no auto-rotate).
