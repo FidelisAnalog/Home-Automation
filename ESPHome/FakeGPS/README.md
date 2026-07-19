@@ -133,7 +133,7 @@ every build.
 Runtime tuning from HA (no reflash): per-sentence enables, baud, output type,
 `time_offset_ms` (cancels the clock's display lag — see spec FR4), sentence
 interval, motion output mode, off-delay, restrobe period, fake
-position/satellites. The motion strobe pulse is fixed at 250 ms.
+position/satellites. The motion strobe pulse is fixed at 1 s.
 
 Note: the spec (FR2) says one burst per second; the working default is now a
 burst every **5 s** (`sentence_interval`, 1–3600 s in YAML, 1–60 s from the HA
@@ -160,7 +160,7 @@ prune/rename as the project settles.
 | Time Offset | number (ms, −1000…1000) | — | Emission phase shift; positive = display earlier |
 | Sentence Interval | number (s, 1–60) | config | Seconds between NMEA bursts |
 | Display Off Delay | number (min, 0.1–1440) | — | ESP-owned display timeout after last motion |
-| Restrobe Period | number (s, 1–15) | config | Keep-alive pulse spacing; must be < clock's min motion interval. Pulse width fixed at 250 ms |
+| Restrobe Period | number (s, 1–15) | config | Keep-alive pulse spacing; must be < clock's min motion interval. Pulse width fixed at 1 s |
 | Fake Latitude / Longitude | number ×2 | config | Position reported in RMC/GGA |
 | Fake Satellites | number (4–12) | config | Sat count in GGA/GSA |
 | Tickle Motion | button | — | Inject a motion event (for HA automations from any sensor) |
