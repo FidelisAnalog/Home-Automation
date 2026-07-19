@@ -333,6 +333,8 @@ void FakeGPS::motion_loop_() {
 
   if (this->pir_gpio_ >= 0) {
     bool pir = gpio_get_level((gpio_num_t) this->pir_gpio_);
+    if (pir != this->pir_last_)
+      ESP_LOGD(TAG, "PIR %s", pir ? "high" : "low");  // device log only, not an HA entity
     if (pir && !this->pir_last_ && this->mode_ != MODE_OFF)
       this->motion_event_("PIR");
     this->pir_last_ = pir;

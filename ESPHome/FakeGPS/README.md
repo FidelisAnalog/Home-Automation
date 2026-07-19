@@ -87,9 +87,7 @@ prune/rename as the project settles.
 | Entity | Type | Category | What it shows |
 |--------|------|----------|---------------|
 | Time Synced | binary | diagnostic | System clock has real time (gates A/V validity) |
-| PIR Motion | binary | — | Raw state of the physical PIR input |
 | Display Should Be On | binary | — | Result of mode + countdown (what the ESP wants) |
-| Motion Line Driven | binary | diagnostic | Strobe pulse currently active on the output pin |
 | Seconds Since Motion | sensor (s) | — | Time since last PIR/tickle event (unknown until first) |
 | Motion Countdown | sensor (s) | — | Remaining off-delay time (0 outside Auto) |
 | NMEA Sentences Sent | sensor | diagnostic | Total sentences transmitted since boot |
@@ -98,9 +96,10 @@ prune/rename as the project settles.
 | Last Motion Source | text | diagnostic | `PIR` / `tickle` / `none` |
 | IP Address / SSID / BSSID / MAC Address | text ×4 | diagnostic | WiFi link details |
 
-Transmitted NMEA sentences deliberately have **no HA entity** — per-burst
-state churn floods the HA logbook. They're printed to the device log instead:
-open the device's web page (its IP) or the builder's log viewer.
+Transmitted NMEA sentences, raw PIR state, and strobe pulses deliberately have
+**no HA entity** — their churn would flood the HA logbook, and the PIR is an
+internal input, not an HA motion sensor. All three appear in the device log
+instead: open the device's web page (its IP) or the builder's log viewer.
 
 ### Calibrating the time offset
 

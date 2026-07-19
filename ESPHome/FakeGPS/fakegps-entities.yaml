@@ -252,22 +252,14 @@ binary_sensor:
     icon: mdi:clock-check
     entity_category: diagnostic
     lambda: 'return id(fgps).is_synced();'
-  - platform: template
-    name: "PIR Motion"
-    id: fgps_bs_pir
-    device_class: motion
-    lambda: 'return id(fgps).pir_state();'
+  # Raw PIR state and the strobe pulses are device-log only: the PIR is an
+  # internal input (not an HA motion sensor), and the strobe line toggles
+  # every restrobe period — either would flood the HA logbook.
   - platform: template
     name: "Display Should Be On"
     id: fgps_bs_display
     icon: mdi:television-ambient-light
     lambda: 'return id(fgps).display_on();'
-  - platform: template
-    name: "Motion Line Driven"
-    id: fgps_bs_line
-    icon: mdi:electric-switch
-    entity_category: diagnostic
-    lambda: 'return id(fgps).motion_line_active();'
 
 sensor:
   - platform: template
