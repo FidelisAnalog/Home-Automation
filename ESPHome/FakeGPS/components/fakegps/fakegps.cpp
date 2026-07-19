@@ -165,7 +165,17 @@ void FakeGPS::loop() {
   int64_t now_us = (int64_t) tv.tv_sec * 1000000LL + tv.tv_usec;
   this->synced_ = tv.tv_sec > SYNC_EPOCH_FLOOR;
 
-  if (!this->stream_enabled_ || this->tx_gpio_ < 0) {
+  // Hold the line completely silent until real time exists: GPZDA has no
+  // valid/void flag, so emitting before sync hands the clock boot-time
+  // garbage it may latch. (time_valid_gate: false restores the old
+  // emit-void-sentences behavior for clocks that honor the RMC/GGA flags.)
+  const bool gate_closed = this->valid_gate_ && !this->synced_;
+
+  if (this->synced_ && !this->was_synced_)
+    ESP_LOGI(TAG, "Time synced; NMEA stream starting");
+  this->was_synced_ = this->synced_;
+
+  if (!this->stream_enabled_ || this->tx_gpio_ < 0 || gate_closed) {
     if (this->hf_active_) {
       this->hf_.stop();
       this->hf_active_ = false;

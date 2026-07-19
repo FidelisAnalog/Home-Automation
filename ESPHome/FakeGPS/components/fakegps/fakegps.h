@@ -114,6 +114,7 @@ class FakeGPS : public Component {
   int64_t next_emit_us_{0};
   int64_t stamp_second_{0};
   bool synced_{false};
+  bool was_synced_{false};
   uint32_t tx_count_{0};
   std::string last_sentence_{};
   HighFrequencyLoopRequester hf_;
