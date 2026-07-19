@@ -291,10 +291,17 @@ sensor:
     name: "Uptime"
     entity_category: diagnostic
 
+# Needed for the reset-reason text sensor below
+debug:
+
 # NMEA sentences deliberately have no HA entity — state churn every burst
 # floods the HA logbook. They're printed to the device log instead (web page
 # at the device IP, or the builder's log viewer).
 text_sensor:
+  - platform: debug
+    reset_reason:
+      name: "Last Reboot Reason"
+      entity_category: diagnostic
   - platform: template
     name: "Last Motion Source"
     id: fgps_ts_source

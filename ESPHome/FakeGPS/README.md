@@ -121,6 +121,7 @@ prune/rename as the project settles.
 | Uptime | sensor | diagnostic | Since boot |
 | FakeGPS WiFi RSSI | sensor (dBm) | — | From device package; also drawn on the OLED |
 | Last Motion Source | text | diagnostic | `PIR` / `tickle` / `none` |
+| Last Reboot Reason | text | diagnostic | Power-on / software restart / panic / brownout / watchdog |
 | IP Address / SSID / BSSID / MAC Address | text ×4 | diagnostic | WiFi link details |
 
 Transmitted NMEA sentences, raw PIR state, and strobe pulses deliberately have
