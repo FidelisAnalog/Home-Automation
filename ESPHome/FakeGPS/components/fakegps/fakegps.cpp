@@ -127,11 +127,22 @@ void FakeGPS::set_sentence_interval_s(uint32_t v) {
 }
 
 void FakeGPS::set_motion_mode(MotionMode m) {
-  if (m != this->mode_) {
-    this->mode_ = m;
-    this->force_strobe_ = true;  // apply the new mode immediately
-    ESP_LOGI(TAG, "Motion mode -> %s", m == MODE_AUTO ? "Auto" : (m == MODE_ON ? "Force On" : "Force Off"));
+  if (m == this->mode_)
+    return;
+  this->mode_ = m;
+  switch (m) {
+    case MODE_ON:
+      this->force_strobe_ = true;  // light the display right away
+      break;
+    case MODE_OFF:
+      this->force_strobe_ = false;  // rest; any active pulse ends on schedule
+      break;
+    default:  // Motion: stay quiet until a fresh PIR edge or tickle
+      this->force_strobe_ = false;
+      this->has_motion_ = false;
+      break;
   }
+  ESP_LOGI(TAG, "Motion mode -> %s", m == MODE_AUTO ? "Motion" : (m == MODE_ON ? "Force On" : "Force Off"));
 }
 
 void FakeGPS::tickle() {
