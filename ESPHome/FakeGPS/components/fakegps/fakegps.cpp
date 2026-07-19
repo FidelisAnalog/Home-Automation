@@ -389,12 +389,14 @@ void FakeGPS::motion_loop_() {
 
   if (want_on && !this->strobe_active_ &&
       (this->force_strobe_ || (now - this->last_strobe_ms_) >= this->restrobe_period_ms_)) {
+    const bool forced = this->force_strobe_;
     this->strobe_active_ = true;
     this->force_strobe_ = false;
     this->strobe_start_ms_ = now;
     this->last_strobe_ms_ = now;
     this->strobe_count_++;
     gpio_set_level((gpio_num_t) this->motion_gpio_, 1);
+    ESP_LOGD(TAG, "Strobe out (%s)", forced ? "immediate" : "periodic");
   }
 
   if (this->strobe_active_ && (now - this->strobe_start_ms_) >= this->strobe_pulse_ms_) {
