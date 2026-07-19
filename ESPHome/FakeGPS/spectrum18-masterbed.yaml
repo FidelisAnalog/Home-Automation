@@ -71,8 +71,7 @@ fakegps:
   time_offset_ms: 0
   sentence_interval: 5s
   off_delay: 5min
-  strobe_pulse: 200ms
-  restrobe_period: 20s
+  restrobe_period: 5s
 
 # ---------------------------------------------------------------------
 #  Phase 1: time, OLED, web dashboard

@@ -118,8 +118,8 @@ class FakeGPS : public Component {
   // motion
   MotionMode mode_{MODE_AUTO};
   uint32_t off_delay_ms_{300000};
-  uint32_t strobe_pulse_ms_{200};
-  uint32_t restrobe_period_ms_{20000};
+  uint32_t strobe_pulse_ms_{250};
+  uint32_t restrobe_period_ms_{5000};
   bool pir_last_{false};
   bool has_motion_{false};
   uint32_t last_motion_ms_{0};

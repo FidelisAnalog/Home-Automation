@@ -53,10 +53,8 @@ CONF_TIME_OFFSET_MS = "time_offset_ms"
 CONF_SENTENCE_INTERVAL = "sentence_interval"
 CONF_TIME_VALID_GATE = "time_valid_gate"
 CONF_OFF_DELAY = "off_delay"
-CONF_STROBE_PULSE = "strobe_pulse"
 CONF_RESTROBE_PERIOD = "restrobe_period"
 CONF_MOTION_MODE = "motion_mode"
-CONF_STREAM_ENABLED = "stream_enabled"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -87,10 +85,11 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_TIME_VALID_GATE, default=True): cv.boolean,
         cv.Optional(CONF_OFF_DELAY, default="5min"): cv.positive_time_period_milliseconds,
-        cv.Optional(CONF_STROBE_PULSE, default="200ms"): cv.positive_time_period_milliseconds,
-        cv.Optional(CONF_RESTROBE_PERIOD, default="20s"): cv.positive_time_period_milliseconds,
+        cv.Optional(CONF_RESTROBE_PERIOD, default="5s"): cv.All(
+            cv.positive_time_period_milliseconds,
+            cv.Range(min=TimePeriod(seconds=1), max=TimePeriod(seconds=15)),
+        ),
         cv.Optional(CONF_MOTION_MODE, default="auto"): cv.enum(MOTION_MODES, lower=True),
-        cv.Optional(CONF_STREAM_ENABLED, default=True): cv.boolean,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -130,7 +129,5 @@ async def to_code(config):
     cg.add(var.set_sentence_interval_s(config[CONF_SENTENCE_INTERVAL]))
     cg.add(var.set_time_valid_gate(config[CONF_TIME_VALID_GATE]))
     cg.add(var.set_off_delay_ms(config[CONF_OFF_DELAY]))
-    cg.add(var.set_strobe_pulse_ms(config[CONF_STROBE_PULSE]))
     cg.add(var.set_restrobe_period_ms(config[CONF_RESTROBE_PERIOD]))
     cg.add(var.set_motion_mode(config[CONF_MOTION_MODE]))
-    cg.add(var.set_stream_enabled(config[CONF_STREAM_ENABLED]))

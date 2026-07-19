@@ -9,16 +9,6 @@
 
 switch:
   - platform: template
-    name: "GPS Stream"
-    id: fgps_sw_stream
-    icon: mdi:satellite-uplink
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
-    turn_on_action:
-      - lambda: 'id(fgps).set_stream_enabled(true);'
-    turn_off_action:
-      - lambda: 'id(fgps).set_stream_enabled(false);'
-  - platform: template
     name: "Sentence GPZDA"
     id: fgps_sw_zda
     icon: mdi:code-brackets
@@ -76,24 +66,24 @@ select:
     on_value:
       - lambda: 'id(fgps).set_baud((uint32_t) atoi(x.c_str()));'
   - platform: template
-    name: "GPS Polarity"
-    id: fgps_sel_polarity
+    name: "Output Type"
+    id: fgps_sel_output_type
     icon: mdi:swap-vertical
     entity_category: config
     optimistic: true
     restore_value: true
-    initial_option: "TTL (idle high)"
-    options: ["TTL (idle high)", "Inverted (idle low)"]
+    initial_option: "TTL"
+    options: ["TTL", "Pseudo-RS232"]
     on_value:
-      - lambda: 'id(fgps).set_invert(x == "Inverted (idle low)");'
+      - lambda: 'id(fgps).set_invert(x == "Pseudo-RS232");'
   - platform: template
-    name: "Motion Mode"
+    name: "Motion Output"
     id: fgps_sel_mode
     icon: mdi:motion-sensor
     optimistic: true
     restore_value: true
-    initial_option: "Auto"
-    options: ["Auto", "Force On", "Force Off"]
+    initial_option: "Motion"
+    options: ["Force On", "Force Off", "Motion"]
     on_value:
       - lambda: |-
           if (x == "Force On")
@@ -148,21 +138,6 @@ number:
     on_value:
       - lambda: 'id(fgps).set_off_delay_ms((uint32_t) (x * 60000.0f));'
   - platform: template
-    name: "Strobe Pulse"
-    id: fgps_num_strobe
-    icon: mdi:pulse
-    unit_of_measurement: "ms"
-    mode: box
-    entity_category: config
-    optimistic: true
-    restore_value: true
-    initial_value: 200
-    min_value: 20
-    max_value: 2000
-    step: 10
-    on_value:
-      - lambda: 'id(fgps).set_strobe_pulse_ms((uint32_t) x);'
-  - platform: template
     name: "Restrobe Period"
     id: fgps_num_restrobe
     icon: mdi:refresh
@@ -171,9 +146,9 @@ number:
     entity_category: config
     optimistic: true
     restore_value: true
-    initial_value: 20
+    initial_value: 5
     min_value: 1
-    max_value: 3600
+    max_value: 15
     step: 1
     on_value:
       - lambda: 'id(fgps).set_restrobe_period_ms((uint32_t) (x * 1000.0f));'
