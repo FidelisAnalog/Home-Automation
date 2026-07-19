@@ -14,8 +14,9 @@ Full requirements: [fakegps_esphome_spec.md](fakegps_esphome_spec.md).
 | File | What it is |
 |------|------------|
 | `components/fakegps/` | The external component (NMEA generator, bit-bang TX, emission scheduler, motion logic) |
+| `fakegps-device.yaml` | Remote package: everything project-side — component source, fakegps config/pins, time source, OLED, fonts, web server |
 | `fakegps-entities.yaml` | Remote package: all the HA switches/selects/numbers/sensors |
-| `spectrum18-masterbed.yaml` | Reference device config (secrets redacted — live copy is in the HAOS builder) |
+| `spectrum18-masterbed.yaml` | Reference device config: identity + secrets + network + the packages block (live copy is in the HAOS builder) |
 | `nixie-fakegps-phase1.yaml` | Historical: phase-1 (OLED + time) paste-in blocks |
 
 ## Wiring (ESP32-C3 0.42" OLED board)
@@ -33,9 +34,9 @@ device YAML if the PIR or clock uses active-low.
 
 ## Usage
 
-The device YAML pulls both the component and the entities package from this
-repo over GitHub (see `spectrum18-masterbed.yaml`, sections
-`external_components:` and `packages:`). After a push to `main`, hit
+The device YAML in the builder is minimal: identity, secrets, network, and a
+`packages:` block pulling `fakegps-device.yaml` + `fakegps-entities.yaml` from
+this repo (see `spectrum18-masterbed.yaml`). After a push to `main`, hit
 Update/Install in the ESPHome builder — `refresh: 0s` makes it re-fetch every
 build.
 

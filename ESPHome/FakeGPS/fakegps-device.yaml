@@ -1,0 +1,94 @@
+# =====================================================================
+#  FakeGPS — device package (everything project-side, fetched from git)
+#
+#  The builder config keeps only: esphome/esp32 core, logger, api, ota,
+#  wifi + secrets, captive_portal, and the packages: block pulling this
+#  file and fakegps-entities.yaml.
+#
+#  Board: ESP32-C3 0.42" OLED | OLED I2C = GPIO5/6
+#  Wiring: GPIO0 -> clock GPS RX, GPIO1 <- PIR out, GPIO10 -> clock motion in
+# =====================================================================
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/FidelisAnalog/Home-Automation
+      ref: main
+      path: ESPHome/FakeGPS/components
+    components: [ fakegps ]
+    refresh: 0s
+
+fakegps:
+  id: fgps
+  time_id: ha_time
+  tx_pin: GPIO0          # -> clock GPS serial RX (3.3V TTL)
+  pir_in_pin:
+    number: GPIO1        # <- PIR output; harmless if no PIR wired yet
+    mode:
+      input: true
+      pulldown: true
+  motion_out_pin: GPIO10 # -> clock motion input
+  baud: 9600
+  invert: false
+  time_offset_ms: 0
+  sentence_interval: 5s
+  off_delay: 5min
+  restrobe_period: 5s
+
+# Accurate time, pulled straight from Home Assistant
+time:
+  - platform: homeassistant
+    id: ha_time
+
+# I2C bus for the onboard OLED
+i2c:
+  sda: GPIO5
+  scl: GPIO6
+  frequency: 800kHz
+
+# WiFi signal — shown on the OLED and exposed to HA
+sensor:
+  - platform: wifi_signal
+    id: wifi_rssi
+    name: "FakeGPS WiFi RSSI"
+    update_interval: 10s
+
+# Fonts (fetched from Google Fonts at build time)
+font:
+  - file: "gfonts://Roboto"
+    id: font_big
+    size: 16
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 8
+
+# On-device web dashboard — browse to the device's IP address
+web_server:
+  port: 80
+
+# Onboard 0.42" OLED. Visible 72x40 window inside a 128x64 controller frame;
+# centered drawing with nudge_y=8 confirmed good on this unit. If a future
+# unit is shifted: try SSD1306 model, then nudges (Amazon reviews claim the
+# window offset is 28,24 — unvalidated).
+display:
+  - platform: ssd1306_i2c
+    model: "SH1106 128x64"
+    address: 0x3C
+    id: oled
+    update_interval: 1s
+    pages:
+      - id: page_home
+        lambda: |-
+          const int cx = it.get_width() / 2;   // ~64, inside the visible window
+          const int nudge_x = 0;               // tweak if text is off to a side
+          const int nudge_y = 8;               // tweak if text is too high/low
+          auto t = id(ha_time).now();
+          if (t.is_valid()) {
+            it.strftime(cx + nudge_x, 13 + nudge_y, id(font_big),
+                        TextAlign::TOP_CENTER, "%H:%M:%S", t);
+          } else {
+            it.print(cx + nudge_x, 13 + nudge_y, id(font_big),
+                     TextAlign::TOP_CENTER, "--:--:--");
+          }
+          it.printf(cx + nudge_x, 33 + nudge_y, id(font_small),
+                    TextAlign::TOP_CENTER, "WiFi %.0f dBm", id(wifi_rssi).state);

@@ -1,12 +1,10 @@
 # =====================================================================
 #  Nixie FakeGPS — spectrum18-masterbed  (reference copy)
 #
-#  This mirrors the config in the HAOS ESPHome builder. Secrets (api key,
-#  wifi, fallback AP password) stay in the builder / secrets.yaml and are
-#  NOT stored in this repo.
-#
-#  Board: ESP32-C3 0.42" OLED board | OLED I2C = GPIO5/6
-#  Wiring: GPIO0 -> clock GPS RX, GPIO1 <- PIR out, GPIO10 -> clock motion in
+#  This mirrors the config in the HAOS ESPHome builder. Only the device
+#  identity, secrets, and network specifics live here — everything
+#  project-side is pulled from git by the packages: block below.
+#  Secrets (api key, wifi, AP password) stay in the builder / secrets.yaml.
 # =====================================================================
 
 esphome:
@@ -37,93 +35,12 @@ wifi:
 
 captive_portal:
 
-# ---------------------------------------------------------------------
-#  FakeGPS: component + HA entities, fetched from GitHub
-# ---------------------------------------------------------------------
-external_components:
-  - source:
-      type: git
-      url: https://github.com/FidelisAnalog/Home-Automation
-      ref: main
-      path: ESPHome/FakeGPS/components
-    components: [ fakegps ]
-    refresh: 0s
-
+# Everything FakeGPS: component, device config, OLED, HA entities — from git
 packages:
-  fakegps_entities:
+  fakegps:
     url: https://github.com/FidelisAnalog/Home-Automation
     ref: main
-    files: [ ESPHome/FakeGPS/fakegps-entities.yaml ]
+    files:
+      - ESPHome/FakeGPS/fakegps-device.yaml
+      - ESPHome/FakeGPS/fakegps-entities.yaml
     refresh: 0s
-
-fakegps:
-  id: fgps
-  time_id: ha_time
-  tx_pin: GPIO0
-  pir_in_pin:
-    number: GPIO1
-    mode:
-      input: true
-      pulldown: true
-  motion_out_pin: GPIO10
-  baud: 9600
-  invert: false
-  time_offset_ms: 0
-  sentence_interval: 5s
-  off_delay: 5min
-  restrobe_period: 5s
-
-# ---------------------------------------------------------------------
-#  Phase 1: time, OLED, web dashboard
-# ---------------------------------------------------------------------
-time:
-  - platform: homeassistant
-    id: ha_time
-
-i2c:
-  sda: GPIO5
-  scl: GPIO6
-  frequency: 800kHz
-
-sensor:
-  - platform: wifi_signal
-    id: wifi_rssi
-    name: "FakeGPS WiFi RSSI"
-    update_interval: 10s
-
-font:
-  - file: "gfonts://Roboto"
-    id: font_big
-    size: 16
-  - file: "gfonts://Roboto"
-    id: font_small
-    size: 8
-
-web_server:
-  port: 80
-
-# Onboard 0.42" OLED. Visible 72x40 window inside a 128x64 frame; centered
-# drawing with nudge_y=8 confirmed good on this unit. (If a future unit is
-# shifted: Amazon reviews suggest window offset 28,24 — try nudges first.)
-display:
-  - platform: ssd1306_i2c
-    model: "SH1106 128x64"
-    address: 0x3C
-    id: oled
-    update_interval: 1s
-    pages:
-      - id: page_home
-        lambda: |-
-          const int cx = it.get_width() / 2;   // ~64, inside the visible window
-          const int nudge_x = 0;               // tweak if text is off to a side
-          const int nudge_y = 8;               // tweak if text is too high/low
-          auto t = id(ha_time).now();
-          if (t.is_valid()) {
-            it.strftime(cx + nudge_x, 13 + nudge_y, id(font_big),
-                        TextAlign::TOP_CENTER, "%H:%M:%S", t);
-          } else {
-            it.print(cx + nudge_x, 13 + nudge_y, id(font_big),
-                     TextAlign::TOP_CENTER, "--:--:--");
-          }
-          it.printf(cx + nudge_x, 33 + nudge_y, id(font_small),
-                    TextAlign::TOP_CENTER, "WiFi %.0f dBm", id(wifi_rssi).state);
