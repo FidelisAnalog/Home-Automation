@@ -110,6 +110,8 @@ instead: open the device's web page (its IP) or the builder's log viewer.
 ## Status
 
 - **Phase 1 (done):** board online, OLED time + RSSI, web dashboard.
-- **Phase 2 (this):** full component — NMEA + bit-bang TX + motion + HA controls.
-- **Later:** OLED polish (spec FR8): status glyphs, WAIT SYNC state, burn-in
-  dimming, and BOOT-button page cycling (no auto-rotate).
+- **Phase 2 (done):** full component — NMEA + bit-bang TX + motion + HA controls.
+- **Phase 3 (this):** OLED pages — Home (time, WiFi bars, TX blink),
+  Motion (PIR/strobe/mode), Network (BSSID/channel/RSSI). BOOT button
+  cycles pages (no auto-rotate); screen blanks after 5 min, BOOT wakes.
+- **Remaining:** bench bring-up with the clock; offset calibration.

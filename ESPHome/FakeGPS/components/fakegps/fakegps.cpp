@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <driver/gpio.h>
 #include <esp_timer.h>
+#include <esp_wifi.h>
 #include <sys/time.h>
 
 namespace esphome {
@@ -139,6 +140,28 @@ void FakeGPS::tickle() {
     return;
   }
   this->motion_event_("tickle");
+}
+
+int FakeGPS::wifi_rssi_now() const {
+  wifi_ap_record_t info;
+  if (esp_wifi_sta_get_ap_info(&info) != ESP_OK)
+    return -127;
+  return info.rssi;
+}
+
+int FakeGPS::wifi_channel() const {
+  wifi_ap_record_t info;
+  if (esp_wifi_sta_get_ap_info(&info) != ESP_OK)
+    return 0;
+  return info.primary;
+}
+
+std::string FakeGPS::bssid() const {
+  wifi_ap_record_t info;
+  if (esp_wifi_sta_get_ap_info(&info) != ESP_OK)
+    return "no link";
+  return str_sprintf("%02X:%02X:%02X:%02X:%02X:%02X", info.bssid[0], info.bssid[1], info.bssid[2], info.bssid[3],
+                     info.bssid[4], info.bssid[5]);
 }
 
 float FakeGPS::seconds_since_motion() const {

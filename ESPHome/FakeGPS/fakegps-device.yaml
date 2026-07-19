@@ -66,8 +66,8 @@ font:
     id: font_big
     size: 16
   - file: "gfonts://Roboto"
-    id: font_small
-    size: 8
+    id: font_med
+    size: 11
 
 # On-device web dashboard — browse to the device's IP address
 web_server:
@@ -77,6 +77,51 @@ web_server:
 # centered drawing with nudge_y=8 confirmed good on this unit. If a future
 # unit is shifted: try SSD1306 model, then nudges (Amazon reviews claim the
 # window offset is 28,24 — unvalidated).
+#
+# Pages cycle with the BOOT button only (no auto-rotate). Screen blanks
+# after 5 min; BOOT wakes it (that press doesn't advance the page).
+globals:
+  - id: oled_last_tx
+    type: uint32_t
+    initial_value: '0'
+  - id: oled_last_press_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: oled_blanked
+    type: bool
+    initial_value: 'false'
+
+binary_sensor:
+  - platform: gpio
+    id: boot_button
+    internal: true
+    pin:
+      number: GPIO9
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - lambda: |-
+            id(oled_last_press_ms) = millis();
+            if (id(oled_blanked)) {
+              id(oled_blanked) = false;
+              id(oled).turn_on();
+            } else {
+              id(oled).show_next_page();
+            }
+            id(oled).update();
+
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (!id(oled_blanked) && (millis() - id(oled_last_press_ms)) > 300000) {
+            id(oled_blanked) = true;
+            id(oled).turn_off();
+          }
+
 display:
   - platform: ssd1306_i2c
     model: "$oled_model"
@@ -84,18 +129,68 @@ display:
     id: oled
     update_interval: 1s
     pages:
+      # Home: time (--:--:-- until synced), WiFi bars, TX blink per burst
       - id: page_home
         lambda: |-
           const int cx = it.get_width() / 2;   // ~64, inside the visible window
           const int nudge_x = $oled_nudge_x;   // tweak if text is off to a side
           const int nudge_y = $oled_nudge_y;   // tweak if text is too high/low
           auto t = id(ha_time).now();
-          if (t.is_valid()) {
+          if (t.is_valid() && id(fgps).is_synced()) {
             it.strftime(cx + nudge_x, 13 + nudge_y, id(font_big),
                         TextAlign::TOP_CENTER, "%H:%M:%S", t);
           } else {
             it.print(cx + nudge_x, 13 + nudge_y, id(font_big),
                      TextAlign::TOP_CENTER, "--:--:--");
           }
-          it.printf(cx + nudge_x, 33 + nudge_y, id(font_small),
-                    TextAlign::TOP_CENTER, "WiFi %.0f dBm", id(wifi_rssi).state);
+          // WiFi bars, bottom-left
+          const int yb = 45 + nudge_y;  // bar baseline
+          int rssi = id(fgps).wifi_rssi_now();
+          int bars = rssi >= -55 ? 4 : rssi >= -65 ? 3 : rssi >= -75 ? 2 : rssi >= -85 ? 1 : 0;
+          for (int i = 0; i < bars; i++) {
+            int h = 3 * (i + 1);
+            it.filled_rectangle(cx + nudge_x - 34 + i * 5, yb - h, 3, h);
+          }
+          // TX indicator, bottom-right: blinks the frame after each burst
+          uint32_t txc = id(fgps).tx_count();
+          if (txc != id(oled_last_tx)) {
+            it.filled_circle(cx + nudge_x + 30, yb - 4, 3);
+            id(oled_last_tx) = txc;
+          }
+      # Motion: PIR in, strobe out, mode
+      - id: page_motion
+        lambda: |-
+          const int cx = it.get_width() / 2;
+          const int x0 = cx + $oled_nudge_x - 34;
+          const int y0 = 13 + $oled_nudge_y;
+          it.print(x0, y0, id(font_med), "PIR");
+          if (id(fgps).pir_state()) {
+            it.filled_circle(x0 + 44, y0 + 5, 4);
+          } else {
+            it.circle(x0 + 44, y0 + 5, 4);
+          }
+          it.print(x0, y0 + 12, id(font_med), "OUT");
+          if (id(fgps).motion_line_active()) {
+            it.filled_circle(x0 + 44, y0 + 17, 4);
+          } else {
+            it.circle(x0 + 44, y0 + 17, 4);
+          }
+          const char *mode = id(fgps).motion_mode() == fakegps::MODE_ON ? "Force On"
+                             : id(fgps).motion_mode() == fakegps::MODE_OFF ? "Force Off"
+                                                                           : "Motion";
+          it.print(x0, y0 + 24, id(font_med), mode);
+      # Network: BSSID (two lines), channel, RSSI
+      - id: page_net
+        lambda: |-
+          const int cx = it.get_width() / 2;
+          const int x0 = cx + $oled_nudge_x - 34;
+          const int y0 = 13 + $oled_nudge_y;
+          std::string b = id(fgps).bssid();
+          if (b.size() == 17) {
+            it.print(x0, y0, id(font_med), b.substr(0, 8).c_str());
+            it.print(x0, y0 + 12, id(font_med), b.substr(9).c_str());
+          } else {
+            it.print(x0, y0, id(font_med), b.c_str());
+          }
+          it.printf(x0, y0 + 24, id(font_med), "CH%d %ddBm",
+                    id(fgps).wifi_channel(), id(fgps).wifi_rssi_now());

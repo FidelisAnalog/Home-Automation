@@ -65,6 +65,10 @@ class FakeGPS : public Component {
   int32_t time_offset_ms() const { return this->time_offset_ms_; }
   uint32_t sentence_interval_s() const { return this->interval_s_; }
   MotionMode motion_mode() const { return this->mode_; }
+  // Live radio info for the OLED (fresh per frame, not the 10s HA sensor)
+  int wifi_rssi_now() const;
+  int wifi_channel() const;
+  std::string bssid() const;
 
   void setup() override;
   void loop() override;
