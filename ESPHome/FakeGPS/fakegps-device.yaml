@@ -170,7 +170,7 @@ display:
             it.circle(x0 + 44, y0 + 5, 4);
           }
           it.print(x0, y0 + 12, id(font_med), "OUT");
-          if (id(fgps).motion_line_active()) {
+          if (id(fgps).strobe_recent()) {
             it.filled_circle(x0 + 44, y0 + 17, 4);
           } else {
             it.circle(x0 + 44, y0 + 17, 4);

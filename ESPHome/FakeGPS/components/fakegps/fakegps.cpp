@@ -393,6 +393,7 @@ void FakeGPS::motion_loop_() {
     this->force_strobe_ = false;
     this->strobe_start_ms_ = now;
     this->last_strobe_ms_ = now;
+    this->strobe_count_++;
     gpio_set_level((gpio_num_t) this->motion_gpio_, 1);
   }
 

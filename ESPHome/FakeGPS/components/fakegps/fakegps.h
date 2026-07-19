@@ -58,6 +58,9 @@ class FakeGPS : public Component {
   bool display_on() const { return this->display_on_; }
   bool pir_state() const { return this->pir_last_; }
   bool motion_line_active() const { return this->strobe_active_; }
+  // Latched for the OLED: a 250 ms pulse sampled at 1 Hz is usually missed,
+  // so report true for 1 s after each strobe instead.
+  bool strobe_recent() const { return this->strobe_count_ > 0 && (millis() - this->last_strobe_ms_) < 1000; }
   float seconds_since_motion() const;
   float countdown_remaining_s() const;
   uint32_t active_baud() const { return this->baud_; }
@@ -134,6 +137,7 @@ class FakeGPS : public Component {
   bool display_on_{false};
   bool strobe_active_{false};
   bool force_strobe_{false};
+  uint32_t strobe_count_{0};
   uint32_t strobe_start_ms_{0};
   uint32_t last_strobe_ms_{0};
 };
