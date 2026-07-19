@@ -38,6 +38,35 @@ display-init failure at boot and runs normally otherwise.
 
 All signals are fixed active-high (HC-SR501-style PIR, rising-edge strobe).
 
+## Fresh install (new board, no ESPHome yet)
+
+1. **Flash generic ESPHome from the browser.** Plug the board in over USB-C
+   and go to [web.esphome.io](https://web.esphome.io) (Chrome/Edge). Click
+   **Connect**, pick the board's serial port, then **Prepare for first use**.
+   When it finishes, use the same dialog to join the board to your WiFi.
+2. **Adopt it.** Open the ESPHome Builder in Home Assistant — the device shows
+   up as discovered (`esphome-web-xxxxxx`). Click **Adopt**, give it a name.
+   The builder writes a base config with your own keys and WiFi secrets.
+3. **Add FakeGPS.** Edit the adopted config, paste this at the bottom, and
+   hit **Install**:
+
+   ```yaml
+   packages:
+     fakegps:
+       url: https://github.com/FidelisAnalog/Home-Automation
+       ref: main
+       files:
+         - ESPHome/FakeGPS/fakegps-device.yaml
+         - ESPHome/FakeGPS/fakegps-entities.yaml
+       refresh: 0s
+   ```
+
+   If the adopted config's `esp32:` section shows `framework: type: arduino`,
+   change it to `esp-idf` — that's what this project is built and tested on.
+
+Then wire per the table above. Signal pins are HA dropdowns after boot, so
+wiring differences need no YAML changes.
+
 ## Usage
 
 The device YAML in the builder is minimal: identity, secrets, network, and a
