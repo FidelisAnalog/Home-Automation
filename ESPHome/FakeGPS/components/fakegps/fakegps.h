@@ -108,7 +108,7 @@ class FakeGPS : public Component {
   Parity parity_{PARITY_NONE};
 
   // NMEA content
-  bool en_zda_{true}, en_rmc_{true}, en_gga_{true}, en_gsa_{true};
+  bool en_zda_{false}, en_rmc_{true}, en_gga_{false}, en_gsa_{false};
   double latitude_{40.2333}, longitude_{-82.85};
   uint8_t sats_{10};
   float altitude_m_{100.0f};
@@ -130,11 +130,12 @@ class FakeGPS : public Component {
 
   // motion
   MotionMode mode_{MODE_AUTO};
-  uint32_t off_delay_ms_{300000};
+  uint32_t off_delay_ms_{900000};
   // 1 s pulse: clocks that poll their motion input (~1 Hz) can miss a short
   // pulse entirely — observed as an intermittent 5 s wake lag at 250 ms.
   uint32_t strobe_pulse_ms_{1000};
-  uint32_t restrobe_period_ms_{5000};
+  // Default restrobe == pulse width -> line held high while display-on.
+  uint32_t restrobe_period_ms_{1000};
   bool pir_last_{false};
   bool has_motion_{false};
   uint32_t last_motion_ms_{0};

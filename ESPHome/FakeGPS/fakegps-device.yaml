@@ -49,8 +49,8 @@ fakegps:
   invert: false
   time_offset_ms: 0
   sentence_interval: 5s
-  off_delay: 5min
-  restrobe_period: 5s
+  off_delay: 15min
+  restrobe_period: 1s   # == pulse width -> line held high while display-on
 
 # Accurate time, pulled straight from Home Assistant
 time:

@@ -183,7 +183,7 @@ prune/rename as the project settles.
 
 | Entity | Type | Category | What it does |
 |--------|------|----------|--------------|
-| Sentence GPZDA / GPRMC / GPGGA / GPGSA | switch ×4 | config | Enable each sentence type individually |
+| Sentence GPZDA / GPRMC / GPGGA / GPGSA | switch ×4 | config | Enable each sentence type individually (only GPRMC on by default) |
 | GPS Baud | select | config | 4800–115200; takes effect next burst |
 | Output Type | select | config | TTL or Pseudo-RS232 (inverted TTL) |
 | GPS TX Pin | select | config | GPIO0 (default) /1/3/10 — live remap |
@@ -192,8 +192,8 @@ prune/rename as the project settles.
 | Motion Output | select | — | Force On / Force Off / Motion (follows PIR + tickles) |
 | Time Offset | number (ms, −1000…1000) | — | Emission phase shift; positive = display earlier |
 | Sentence Interval | number (s, 1–60) | config | Seconds between NMEA bursts |
-| Display Off Delay | number (min, 0.1–1440) | — | ESP-owned display timeout after last motion |
-| Restrobe Period | number (s, 1–15) | config | Keep-alive pulse spacing; must be < clock's min motion interval. Pulse width fixed at 1 s |
+| Display Off Delay | number (min, 0.1–1440) | — | ESP-owned display timeout after last motion (default 15 min) |
+| Restrobe Period | number (s, 1–15) | config | Keep-alive pulse spacing; must be < clock's min motion interval. Pulse width fixed at 1 s; default 1 s = line held high while display-on |
 | Fake Latitude / Longitude | number ×2 | config | Position reported in RMC/GGA |
 | Fake Satellites | number (4–12) | config | Sat count in GGA/GSA |
 | Tickle Motion | button | — | Inject a motion event (for HA automations from any sensor) |
