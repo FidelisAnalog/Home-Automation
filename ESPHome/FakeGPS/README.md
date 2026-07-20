@@ -98,6 +98,15 @@ Default wiring on these boards: GPIO16 → clock GPS RX, GPIO17 ← PIR,
 GPIO18 → clock motion input. The missing OLED logs one init failure at
 boot and is otherwise ignored.
 
+Most WROOM-32 dev boards (ELEGOO included) have a spare blue LED on GPIO2.
+To use it as a health indicator — off when everything is fine, slow blink
+when WiFi/HA is down, fast blink on error — add to the builder config:
+
+```yaml
+status_led:
+  pin: GPIO2
+```
+
 ## Standalone (no Home Assistant)
 
 The component doesn't care where time comes from — swap Home Assistant time
