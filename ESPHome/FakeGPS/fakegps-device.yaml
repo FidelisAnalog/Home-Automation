@@ -17,6 +17,16 @@
 # =====================================================================
 
 substitutions:
+  # Signal-pin dropdown: the four GPIOs offered and the boot defaults.
+  # These are safe pins for the ESP32-C3 0.42" OLED board; other boards
+  # override them (see README "Other boards").
+  fakegps_pin_a: GPIO0
+  fakegps_pin_b: GPIO1
+  fakegps_pin_c: GPIO3
+  fakegps_pin_d: GPIO10
+  fakegps_tx_pin_default: GPIO0
+  fakegps_pir_pin_default: GPIO1
+  fakegps_motion_pin_default: GPIO10
   oled_sda: GPIO5
   oled_scl: GPIO6
   oled_model: "SH1106 128x64"

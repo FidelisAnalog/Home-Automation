@@ -91,11 +91,14 @@ class FakeGPS : public Component {
   static std::string wrap_checksum_(const std::string &body);
   static void deg_to_dm_(double deg, bool is_lat, char *buf, size_t len, char &hemi);
 
-  // wiring
+  // wiring — pins start unset (-1); the HA pin selects push the numbers at
+  // boot (restored or initial value). No hardcoded defaults: safe pin
+  // numbers differ per chip (C3 vs classic ESP32), and the old C3 defaults
+  // (GPIO1/10) land on the console and flash pins of a WROOM-32.
   time::RealTimeClock *rtc_{nullptr};
-  int8_t tx_gpio_{0};
-  int8_t pir_gpio_{1};
-  int8_t motion_gpio_{10};
+  int8_t tx_gpio_{-1};
+  int8_t pir_gpio_{-1};
+  int8_t motion_gpio_{-1};
 
   // serial parameters
   uint32_t baud_{9600};

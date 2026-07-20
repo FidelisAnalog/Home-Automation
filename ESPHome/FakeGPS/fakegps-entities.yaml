@@ -97,8 +97,10 @@ select:
       sorting_weight: 7
     on_value:
       - lambda: 'id(fgps).set_invert(x == "Pseudo-RS232");'
-  # Pin assignment — safe GPIOs only (2/8/9 are strapping/BOOT, 4-7 are
-  # JTAG/OLED I2C, 20/21 are the UART console). Takes effect immediately.
+  # Pin assignment — the offered GPIOs and defaults come from substitutions
+  # so each board type can present its own safe set (defaults in
+  # fakegps-device.yaml are for the C3 0.42" OLED board; per-board overrides
+  # in the README). Takes effect immediately.
   - platform: template
     name: "GPS TX Pin"
     id: fgps_sel_tx_pin
@@ -106,8 +108,8 @@ select:
     entity_category: config
     optimistic: true
     restore_value: true
-    initial_option: "GPIO0"
-    options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    initial_option: "$fakegps_tx_pin_default"
+    options: ["$fakegps_pin_a", "$fakegps_pin_b", "$fakegps_pin_c", "$fakegps_pin_d"]
     web_server:
       sorting_group_id: sg_gps
       sorting_weight: 8
@@ -120,8 +122,8 @@ select:
     entity_category: config
     optimistic: true
     restore_value: true
-    initial_option: "GPIO1"
-    options: ["None", "GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    initial_option: "$fakegps_pir_pin_default"
+    options: ["None", "$fakegps_pin_a", "$fakegps_pin_b", "$fakegps_pin_c", "$fakegps_pin_d"]
     web_server:
       sorting_group_id: sg_motion
       sorting_weight: 2
@@ -138,8 +140,8 @@ select:
     entity_category: config
     optimistic: true
     restore_value: true
-    initial_option: "GPIO10"
-    options: ["GPIO0", "GPIO1", "GPIO3", "GPIO10"]
+    initial_option: "$fakegps_motion_pin_default"
+    options: ["$fakegps_pin_a", "$fakegps_pin_b", "$fakegps_pin_c", "$fakegps_pin_d"]
     web_server:
       sorting_group_id: sg_motion
       sorting_weight: 3

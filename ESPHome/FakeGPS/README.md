@@ -65,6 +65,39 @@ All signals are fixed active-high (HC-SR501-style PIR, rising-edge strobe).
 Then wire per the table above. Signal pins are HA dropdowns after boot, so
 wiring differences need no YAML changes.
 
+## Other boards (classic ESP32 / WROOM-32)
+
+The packages default to the ESP32-C3 0.42" OLED board. Any classic ESP32
+(ESP-WROOM-32) board — e.g. the ELEGOO ESP-32 DevKit (EL-SM-012) or a
+D1 Mini ESP32, both USB-C — works with the same firmware, but the safe
+GPIOs differ per chip, so the builder config must override the pin
+substitutions. **This is not optional**: the C3 values land on the WROOM-32's
+serial console and flash pins.
+
+Builder config for a WROOM-32 board — `esp32:` section uses
+`variant: esp32` (the wizard/adoption sets this from the detected chip),
+plus:
+
+```yaml
+substitutions:
+  # Safe, fully usable GPIOs on WROOM-32 dev boards
+  fakegps_pin_a: GPIO16
+  fakegps_pin_b: GPIO17
+  fakegps_pin_c: GPIO18
+  fakegps_pin_d: GPIO19
+  fakegps_tx_pin_default: GPIO16
+  fakegps_pir_pin_default: GPIO17
+  fakegps_motion_pin_default: GPIO18
+  # No OLED fitted, but the I2C bus still initializes — it must not sit on
+  # the C3 defaults (GPIO6 is a flash pin on WROOM-32; the board won't boot)
+  oled_sda: GPIO21
+  oled_scl: GPIO22
+```
+
+Default wiring on these boards: GPIO16 → clock GPS RX, GPIO17 ← PIR,
+GPIO18 → clock motion input. The missing OLED logs one init failure at
+boot and is otherwise ignored.
+
 ## Standalone (no Home Assistant)
 
 The component doesn't care where time comes from — swap Home Assistant time
