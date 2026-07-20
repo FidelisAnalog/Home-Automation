@@ -95,8 +95,20 @@ substitutions:
 ```
 
 Default wiring on these boards: GPIO16 → clock GPS RX, GPIO17 ← PIR,
-GPIO18 → clock motion input. The missing OLED logs one init failure at
-boot and is otherwise ignored.
+GPIO18 → clock motion input.
+
+With no OLED fitted, the display driver fails init at boot. That's mostly
+harmless, but it counts as a failed component — which matters if you use the
+status LED below (it would fast-blink "error" forever). On OLED-less boards
+remove the display bits in the builder config:
+
+```yaml
+display:
+  - id: !remove oled
+binary_sensor:
+  - id: !remove boot_button
+interval: !remove
+```
 
 Most WROOM-32 dev boards (ELEGOO included) have a spare blue LED on GPIO2.
 To use it as a health indicator — off when everything is fine, slow blink
